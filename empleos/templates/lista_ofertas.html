@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Red Laboral Chile | Conectando Talento Joven</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇨🇱</text></svg>">
+    {% load humanize %} 
+    <style>
+        :root { --primary-color: #2563eb; --secondary-color: #1e40af; --accent-color: #f59e0b; }
+        .hero-section { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 80px 0 100px 0; color: white; position: relative; overflow: hidden; }
+        .hero-section::after { content: ""; position: absolute; bottom: -50px; left: 0; width: 100%; height: 100px; background: #f8f9fa; transform: skewY(-2deg); }
+        .search-box { background: white; padding: 10px; border-radius: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .search-input { border: none; box-shadow: none !important; font-size: 1.1rem; }
+        .oferta-card { border: none; border-radius: 15px; transition: all 0.3s ease; background: white; border: 1px solid #eee; position: relative; }
+        .oferta-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.08); border-color: var(--primary-color); }
+        .oferta-destacada { border: 2px solid var(--accent-color) !important; background: linear-gradient(to bottom, #ffffff, #fffdf5); }
+        
+        /* CORAZÓN DE FAVORITOS */
+        .btn-fav-db { position: absolute; top: 15px; right: 15px; z-index: 10; width: 35px; height: 35px; border-radius: 50%; background: white; border: 1px solid #eee; color: #ccc; display: flex; align-items: center; justify-content: center; transition: 0.2s; text-decoration: none; }
+        .btn-fav-db:hover { background: #f8f9fa; color: #e11d48; }
+        .btn-fav-db.active { color: #e11d48; border-color: #e11d48; background: #fff1f2; }
+        
+        /* Animaciones */
+        .animate-up { animation: fadeInUp 0.8s ease forwards; opacity: 0; transform: translateY(20px); }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        
+        /* Footer Links Hover */
+        .hover-white:hover { color: white !important; }
+    </style>
+</head>
+<body style="background-color: #f8f9fa;" class="d-flex flex-column min-vh-100">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+                <span style="font-size: 1.5rem;">🇨🇱</span> Red Laboral Chile
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto me-4 fw-bold small text-uppercase align-items-center">
+                    <li class="nav-item"><a class="nav-link active" href="/">Ofertas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/practicas/">Prácticas</a></li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Explorar</a>
+                        <ul class="dropdown-menu border-0 shadow-sm">
+                            <li><a class="dropdown-item" href="/candidatos/">👥 Talentos</a></li>
+                            <li><a class="dropdown-item" href="/empresas/">🏢 Empresas</a></li>
+                            <li><a class="dropdown-item" href="/mapa/">🗺️ Mapa de Empleos</a></li>
+                            <li><a class="dropdown-item" href="/blog/">📰 Blog & Noticias</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/estadisticas/">📊 Estadísticas</a></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-3">
+                    {% if user.is_authenticated %}
+                        <a href="/mis-favoritos/" class="btn btn-outline-light border-0 position-relative" title="Mis Favoritos">
+                            <i class="bi bi-heart-fill"></i>
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-dark d-flex align-items-center gap-2 border border-secondary rounded-pill px-3 py-1" data-bs-toggle="dropdown">
+                                <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=random&color=fff&size=28" class="rounded-circle"> 
+                                <span class="d-none d-lg-inline">{{ user.username }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                                <li><a class="dropdown-item" href="/mis-postulaciones/">📅 Mis Postulaciones</a></li>
+                                <li><a class="dropdown-item" href="/mis-avisos/">📢 Panel Empresa</a></li>
+                                {% if user.is_staff %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item fw-bold text-primary" href="/admin/" target="_blank">👔 Panel Ejecutivo</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="/logout/">Cerrar Sesión</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="/login/" class="text-white text-decoration-none me-2 fw-bold small">INGRESAR</a>
+                        <a href="/registro/" class="btn btn-outline-light rounded-pill px-3 btn-sm fw-bold">REGISTRO</a>
+                    {% endif %}
+                    <a href="/publicar/" class="btn btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm btn-sm">🚀 PUBLICAR</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero-section text-center">
+        <div class="container position-relative z-2">
+            <div class="mb-3 display-1 animate-up">🇨🇱</div>
+            
+            <h1 class="display-3 fw-bold mb-2 animate-up">Red Laboral Chile</h1>
+            
+            <p class="lead mb-5 opacity-75 mx-auto animate-up" style="max-width: 700px; font-weight: 300; animation-delay: 0.1s;">
+                Conectamos el talento de jóvenes y profesionales con el motor productivo del país. 
+                Tu esfuerzo merece oportunidades reales. <br><strong>¡A conseguir pega!</strong> 🚀
+            </p>
+            
+            <div class="row justify-content-center animate-up" style="animation-delay: 0.2s;">
+                <div class="col-md-8">
+                    <form method="get" class="search-box d-flex">
+                        <span class="d-flex align-items-center ps-3 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control search-input bg-transparent" placeholder="Cargo, empresa o palabra clave..." value="{{ request.GET.q|default:'' }}">
+                        
+                        <div class="d-none d-md-block border-start mx-2"></div>
+                        
+                        <select name="region" class="form-select border-0 bg-transparent d-none d-md-block" style="max-width: 200px;">
+                            <option value="">Todo Chile</option>
+                            {% for codigo, nombre in regiones %}
+                                <option value="{{ codigo }}" {% if request.GET.region == codigo %}selected{% endif %}>{{ nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold ms-2">Buscar</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-center gap-2 flex-wrap opacity-75 animate-up" style="animation-delay: 0.3s;">
+                <small>Lo más buscado:</small>
+                <a href="?q=practica" class="badge bg-white bg-opacity-10 text-white text-decoration-none border border-white border-opacity-25 rounded-pill px-3 fw-normal">🎓 Prácticas</a>
+                <a href="?q=part time" class="badge bg-white bg-opacity-10 text-white text-decoration-none border border-white border-opacity-25 rounded-pill px-3 fw-normal">⏱️ Part Time</a>
+                <a href="?q=sin experiencia" class="badge bg-white bg-opacity-10 text-white text-decoration-none border border-white border-opacity-25 rounded-pill px-3 fw-normal">⚡ Primer Empleo</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container py-5">
+        {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}{% endif %}
+        
+        <div class="row">
+            <div class="col-lg-3 d-none d-lg-block">
+                <div class="sticky-top" style="top: 100px;">
+                    <form method="get" class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white fw-bold">⚙️ Filtros Avanzados</div>
+                        <div class="card-body">
+                            <input type="hidden" name="q" value="{{ request.GET.q|default:'' }}">
+                            <input type="hidden" name="region" value="{{ request.GET.region|default:'' }}">
+
+                            <div class="mb-3">
+                                <label class="small text-muted fw-bold mb-2">Fecha Publicación</label>
+                                <select name="dias" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="">Cualquier fecha</option>
+                                    <option value="1" {% if request.GET.dias == '1' %}selected{% endif %}>Últimas 24 horas</option>
+                                    <option value="3" {% if request.GET.dias == '3' %}selected{% endif %}>Últimos 3 días</option>
+                                    <option value="7" {% if request.GET.dias == '7' %}selected{% endif %}>Última semana</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="small text-muted fw-bold mb-2">Sueldo Mínimo</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" name="min_sueldo" class="form-control" placeholder="Ej: 500000" value="{{ request.GET.min_sueldo|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm">Aplicar Filtros</button>
+                                <a href="/" class="btn btn-link btn-sm text-decoration-none">Limpiar Todo</a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="card border-0 shadow-sm bg-primary text-white bg-gradient rounded-4">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold">📩 Recibe alertas</h6>
+                            <p class="small opacity-75 mb-2">Te avisamos cuando salga empleo.</p>
+                            <a href="/crear-alerta/" class="btn btn-light btn-sm w-100 fw-bold text-primary rounded-pill">Crear Alerta</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <h5 class="fw-bold mb-4 text-secondary">Últimas Vacantes <span class="fw-normal fs-6">({{ ofertas.paginator.count }})</span></h5>
+
+                {% for oferta in ofertas %}
+                <div class="card oferta-card mb-3 p-3 {% if oferta.es_destacado %}oferta-destacada{% endif %}">
+                    {% if user.is_authenticated %}
+                        <a href="/oferta/{{ oferta.id }}/favorito/" class="btn-fav-db {% if oferta.id in favoritos_ids %}active{% endif %}" title="Guardar">
+                            <i class="bi {% if oferta.id in favoritos_ids %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                        </a>
+                    {% else %}
+                        <a href="/login/" class="btn-fav-db" title="Inicia sesión para guardar"><i class="bi bi-heart"></i></a>
+                    {% endif %}
+
+                    <div class="row g-0 align-items-center">
+                        <div class="col-md-1 col-3 text-center">
+                            {% if oferta.imagen %}
+                                <img src="{{ oferta.imagen.url }}" class="img-fluid rounded-3 border" style="max-height: 60px; object-fit: contain;">
+                            {% else %}
+                                <div class="bg-light rounded-3 d-flex align-items-center justify-content-center text-muted fw-bold display-6 border" style="width: 60px; height: 60px;">🏢</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8 col-9 ps-3">
+                            <h5 class="card-title mb-0 fw-bold">
+                                <a href="/oferta/{{ oferta.id }}/" class="text-dark text-decoration-none stretched-link">{{ oferta.titulo }}</a>
+                            </h5>
+                            <p class="card-text text-muted small mb-1">{{ oferta.empresa }} • {{ oferta.get_region_display }}</p>
+                            <div class="d-flex gap-2 mt-2">
+                                <span class="badge bg-light text-secondary border fw-normal">{{ oferta.get_modalidad_display }}</span>
+                                {% if oferta.sueldo %}<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold">${{ oferta.sueldo|intcomma }}</span>{% endif %}
+                                {% if oferta.es_nueva %}<span class="badge bg-warning text-dark border border-warning">🔥 Nuevo</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-none d-md-flex flex-column align-items-end pe-3">
+                            <small class="text-muted mb-2">{{ oferta.fecha_publicacion|naturaltime }}</small>
+                            <a href="/oferta/{{ oferta.id }}/" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold position-relative z-2">Ver Oferta</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                    <div class="text-center py-5">
+                        <div class="mb-3 opacity-25 display-1">🔍</div>
+                        <h4>No encontramos ofertas con esos filtros.</h4>
+                        <p class="text-muted">Intenta con palabras más generales o limpia los filtros.</p>
+                        <a href="/" class="btn btn-outline-primary rounded-pill mt-2">Ver todas las ofertas</a>
+                    </div>
+                {% endfor %}
+
+                {% if ofertas.has_other_pages %}
+                <nav class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        {% if ofertas.has_previous %}
+                            <li class="page-item"><a class="page-link rounded-circle mx-1" href="?page={{ ofertas.previous_page_number }}&q={{ request.GET.q }}&region={{ request.GET.region }}"><i class="bi bi-arrow-left"></i></a></li>
+                        {% endif %}
+                        <li class="page-item active"><span class="page-link rounded-circle mx-1">{{ ofertas.number }}</span></li>
+                        {% if ofertas.has_next %}
+                            <li class="page-item"><a class="page-link rounded-circle mx-1" href="?page={{ ofertas.next_page_number }}&q={{ request.GET.q }}&region={{ request.GET.region }}"><i class="bi bi-arrow-right"></i></a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-light pt-5 pb-3 mt-auto border-top border-secondary">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5 class="text-warning fw-bold mb-3">🇨🇱 Red Laboral Chile</h5>
+                    <p class="small text-secondary">
+                        Plataforma de intermediación laboral digital. Facilitamos el encuentro entre talento joven, técnicos, profesionales y el motor productivo del país.
+                    </p>
+                    <p class="small text-secondary mb-0">
+                        📍 Av. Providencia 1234, Santiago.<br>
+                        📧 contacto@redlaboral.cl
+                    </p>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <h5 class="text-white fw-bold mb-3">Navegación</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/" class="text-decoration-none text-secondary hover-white">Buscar Empleo</a></li>
+                        <li class="mb-2"><a href="/publicar/" class="text-decoration-none text-secondary hover-white">Publicar Oferta</a></li>
+                        <li class="mb-2"><a href="/planes/" class="text-decoration-none text-secondary hover-white">Planes Empresas</a></li>
+                        <li><a href="/contacto/" class="text-decoration-none text-secondary hover-white">Soporte y Ayuda</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <h5 class="text-white fw-bold mb-3">Marco Legal</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/terminos/" class="text-decoration-none text-secondary hover-white">⚖️ Términos y Condiciones</a></li>
+                        <li class="mb-2"><a href="/privacidad/" class="text-decoration-none text-secondary hover-white">🔒 Política de Privacidad</a></li>
+                    </ul>
+                    <div class="alert alert-dark border-secondary p-2 mt-3">
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">
+                            Cumplimiento Ley N° 19.628 (Protección de la Vida Privada) y Normativa de la Dirección del Trabajo (DT).
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="border-secondary opacity-50">
+            
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="small text-muted mb-0">&copy; 2025 Red Laboral Chile SpA. Todos los derechos reservados.</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                    <span class="text-muted small">Desarrollado en Chile 🌶️</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa de Empleos | EmpleosChile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        #map { height: 80vh; width: 100%; border-radius: 10px; }
+        .popup-title { font-weight: bold; font-size: 1.1em; color: #0d6efd; text-decoration: none; }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🇨🇱 EmpleosChile</a>
+            <a href="/" class="btn btn-outline-light btn-sm">Volver a la Lista</a>
+        </div>
+    </nav>
+    <div class="container-fluid px-4">
+        <h3 class="mb-3 text-center">🗺️ Explorador Geográfico de Empleos</h3>
+        <div class="card shadow">
+            <div class="card-body p-1"><div id="map"></div></div>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([-35.6751, -71.543], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+        var ofertas = {{ marcadores_json|safe }};
+        ofertas.forEach(function(oferta) {
+            var marker = L.marker([oferta.lat, oferta.lng]).addTo(map);
+            marker.bindPopup(`<div class="text-center"><a href="${oferta.url}" class="popup-title">${oferta.titulo}</a><br><strong>${oferta.empresa}</strong><br><span class="badge bg-secondary">${oferta.tipo}</span><br><a href="${oferta.url}" class="btn btn-sm btn-primary mt-2">Ver Detalle</a></div>`);
+        });
+    </script>
+</body>
+</html>

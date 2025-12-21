@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Blog y Consejos | EmpleosChile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-5">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🇨🇱 EmpleosChile Blog</a>
+            <a href="/" class="btn btn-outline-light btn-sm">Volver</a>
+        </div>
+    </nav>
+    <div class="container">
+        <h2 class="mb-4">Consejos para tu vida laboral</h2>
+        <div class="row">
+            {% for noticia in noticias %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    {% if noticia.imagen %}
+                        <img src="{{ noticia.imagen.url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">Sin Imagen</div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ noticia.titulo }}</h5>
+                        <p class="card-text text-muted">{{ noticia.contenido|truncatewords:20 }}</p>
+                        <a href="/blog/{{ noticia.id }}/" class="btn btn-outline-primary btn-sm">Leer más</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+                <p>Aún no hay noticias publicadas.</p>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

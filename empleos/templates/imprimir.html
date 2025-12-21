@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Oferta de Trabajo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: white; color: black; font-family: Arial, sans-serif; }
+        .print-container { max-width: 800px; margin: 0 auto; padding: 40px; border: 5px solid #000; height: 95vh; display: flex; flex-direction: column; justify-content: space-between; }
+        .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 20px; }
+        .job-title { font-size: 3rem; font-weight: 900; text-transform: uppercase; line-height: 1.1; margin-bottom: 10px; }
+        .company { font-size: 1.5rem; color: #555; }
+        .details { font-size: 1.5rem; margin-bottom: 20px; }
+        .cta-box { background: #000; color: white; padding: 20px; text-align: center; border-radius: 10px; display: flex; align-items: center; justify-content: space-around; }
+        .qr-code img { width: 150px; height: 150px; border: 5px solid white; }
+        @media print { .no-print { display: none !important; } body { margin: 0; padding: 0; } .print-container { border: none; height: 100%; } }
+    </style>
+</head>
+<body>
+    <div class="no-print text-center py-3 bg-light border-bottom">
+        <button onclick="window.print()" class="btn btn-primary btn-lg">🖨️ Imprimir Cartel</button>
+        <a href="javascript:history.back()" class="btn btn-secondary btn-lg">Volver</a>
+    </div>
+    <div class="print-container">
+        <div>
+            <div class="print-header">
+                <h4 class="text-uppercase mb-3">¡Estamos Contratando!</h4>
+                <h1 class="job-title">{{ oferta.titulo }}</h1>
+                <h3 class="company">{{ oferta.empresa }}</h3>
+            </div>
+            <div class="details">
+                <p><strong>📍 Ubicación:</strong> {{ oferta.get_region_display }}</p>
+                <p><strong>🛠️ Tipo:</strong> {{ oferta.get_tipo_display }}</p>
+                {% if oferta.sueldo %}<p><strong>💰 Sueldo:</strong> ${{ oferta.sueldo }} (Líquido aprox.)</p>{% endif %}
+            </div>
+            <div class="mt-4">
+                <h5>Descripción breve:</h5>
+                <p style="font-size: 1.2rem;">{{ oferta.descripcion|striptags|truncatewords:40 }}</p>
+            </div>
+        </div>
+        <div class="cta-box">
+            <div>
+                <h2 class="fw-bold mb-0">¿INTERESADO?</h2>
+                <p class="mb-0 fs-4">Escanea para postular 👉</p>
+            </div>
+            <div class="qr-code">
+                <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Postulación">
+            </div>
+        </div>
+        <div class="text-center mt-3 text-muted"><small>Encuentra más ofertas en <strong>EmpleosChile</strong></small></div>
+    </div>
+</body>
+</html>

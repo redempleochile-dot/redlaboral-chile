@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Perfil de {{ candidato.nombre }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    {% load humanize %}
+    <style>
+        .blurred-text { color: transparent; text-shadow: 0 0 8px rgba(0,0,0,0.5); user-select: none; }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <a href="/candidatos/" class="btn btn-outline-secondary mb-4">← Volver al directorio</a>
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow border-0 overflow-hidden">
+                    <div class="bg-primary text-white p-5 text-center" style="background: linear-gradient(45deg, #0d6efd, #0099ff);">
+                        {% if candidato.foto %}<img src="{{ candidato.foto.url }}" class="rounded-circle border border-4 border-white shadow mb-3" style="width: 150px; height: 150px; object-fit: cover;">{% else %}<img src="https://ui-avatars.com/api/?name={{ candidato.nombre }}&size=150&background=fff&color=0d6efd" class="rounded-circle border border-4 border-white shadow mb-3">{% endif %}
+                        <h1 class="fw-bold">{{ candidato.nombre }}</h1>
+                        <h4 class="fw-light opacity-75">{{ candidato.titular }}</h4>
+                        <div class="mt-3"><span class="badge bg-white text-primary rounded-pill px-3">📍 {{ candidato.get_region_display }}</span> <span class="badge bg-white text-primary rounded-pill px-3">📂 {{ candidato.get_rubro_display }}</span></div>
+                    </div>
+                    <div class="card-body p-5">
+                        <div class="row">
+                            <div class="col-md-4 border-end">
+                                <h5 class="fw-bold text-uppercase text-muted small mb-3">Información Clave</h5>
+                                <ul class="list-unstyled">
+                                    <li class="mb-3"><strong>🎓 Experiencia:</strong><br>{{ candidato.get_experiencia_display }}</li>
+                                    <li class="mb-3"><strong>💰 Renta Esperada:</strong><br>{% if candidato.pretension_renta %}${{ candidato.pretension_renta|intcomma }}{% else %}A convenir{% endif %}</li>
+                                    <li class="mb-3"><strong>📅 Disponibilidad:</strong><br>{{ candidato.disponibilidad }}</li>
+                                    
+                                    <li class="mb-3">
+                                        <strong>📧 Email:</strong><br>
+                                        {% if puede_ver_contacto %}
+                                            {{ candidato.email }}
+                                        {% else %}
+                                            <span class="blurred-text">usuario@email.com</span>
+                                            <span class="badge bg-warning text-dark">🔒 Solo Premium</span>
+                                        {% endif %}
+                                    </li>
+                                    <li class="mb-3">
+                                        <strong>📱 Teléfono:</strong><br>
+                                        {% if puede_ver_contacto %}
+                                            {{ candidato.telefono }}
+                                        {% else %}
+                                            <span class="blurred-text">+569 1234 5678</span>
+                                        {% endif %}
+                                    </li>
+                                    {% if candidato.linkedin %}<li class="mb-3"><strong>🔗 Redes:</strong><br><a href="{{ candidato.linkedin }}" target="_blank">Ver LinkedIn</a></li>{% endif %}
+                                </ul>
+                                
+                                <div class="d-grid gap-2 mt-4">
+                                    {% if puede_ver_contacto %}
+                                        <a href="mailto:{{ candidato.email }}" class="btn btn-primary">✉️ Contactar</a>
+                                    {% else %}
+                                        <a href="/planes/" class="btn btn-warning">💎 Desbloquear Contacto</a>
+                                    {% endif %}
+                                    <a href="/candidato/{{ candidato.id }}/descargar/" class="btn btn-danger">📄 Descargar en PDF</a>
+                                </div>
+                            </div>
+                            <div class="col-md-8 ps-md-5">
+                                <h4 class="fw-bold mb-4">Sobre mí</h4>
+                                <div class="lead text-muted" style="font-size: 1.1rem; line-height: 1.8;">{{ candidato.presentacion|linebreaks }}</div>
+                                <div class="alert alert-info mt-5 d-flex align-items-center"><span class="fs-2 me-3">🛡️</span><div><small><strong>Seguridad:</strong> Perfil verificado. Contacta responsablemente.</small></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

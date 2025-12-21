@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /cuenta/
+Disallow: /mis-avisos/
+Disallow: /mis-postulaciones/
+Disallow: /checkout/
+Allow: /
+
+Sitemap: https://www.tusitio.cl/sitemap.xml

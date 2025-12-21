@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Trabajar en {{ nombre_empresa }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div style="height: 250px; background: {% if perfil.banner %}url('{{ perfil.banner.url }}'){% else %}linear-gradient(90deg, #0d6efd, #0dcaf0){% endif %}; background-size: cover; background-position: center;"></div>
+    <div class="container" style="margin-top: -80px;">
+        <div class="card shadow border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-md-flex align-items-end">
+                    <div class="me-4 position-relative">
+                        {% if perfil.logo %}<img src="{{ perfil.logo.url }}" class="rounded bg-white p-1 border shadow" style="width: 150px; height: 150px; object-fit: contain;">{% else %}<div class="rounded bg-white p-1 border shadow d-flex align-items-center justify-content-center display-1 fw-bold text-secondary" style="width: 150px; height: 150px;">🏢</div>{% endif %}
+                    </div>
+                    <div class="flex-grow-1 mt-3 mt-md-0">
+                        <h1 class="fw-bold mb-1">{{ nombre_empresa }}</h1>
+                        {% if perfil.sitio_web %}<a href="{{ perfil.sitio_web }}" target="_blank" class="text-decoration-none">🔗 Visitar Sitio Web</a>{% endif %}
+                        <div class="mt-2">{% if promedio %}<span class="badge bg-warning text-dark fs-6">⭐ {{ promedio }}/5 Valoración</span>{% else %}<span class="badge bg-secondary">Sin valoraciones aún</span>{% endif %} <span class="badge bg-primary fs-6">{{ ofertas.count }} Ofertas activas</span></div>
+                    </div>
+                    <div class="mt-3 mt-md-0"><a href="/" class="btn btn-outline-secondary">Volver al inicio</a></div>
+                </div>
+                {% if perfil.descripcion %}<hr class="my-4"><h5 class="fw-bold">Sobre nosotros</h5><p class="text-muted">{{ perfil.descripcion|linebreaks }}</p>{% endif %}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-8">
+                <h4 class="mb-3">Oportunidades Laborales</h4>
+                {% for oferta in ofertas %}
+                    <div class="card shadow-sm mb-3 hover-shadow transition">
+                        <div class="card-body">
+                            <h5 class="fw-bold"><a href="/oferta/{{ oferta.id }}/" class="text-dark text-decoration-none">{{ oferta.titulo }}</a></h5>
+                            <div class="text-muted small">📍 {{ oferta.get_region_display }} | 📅 {{ oferta.fecha_publicacion|date:"d M Y" }} {% if oferta.sueldo %}| 💰 ${{ oferta.sueldo }}{% endif %}</div>
+                            <div class="text-end mt-2"><a href="/oferta/{{ oferta.id }}/" class="btn btn-sm btn-primary">Ver Oferta</a></div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="alert alert-info">Esta empresa no tiene ofertas activas por el momento.</div>
+                {% endfor %}
+            </div>
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 bg-white">
+                    <div class="card-header bg-white fw-bold">⭐ Opiniones de empleados</div>
+                    <div class="card-body">
+                        {% for v in valoraciones %}
+                            <div class="mb-3 border-bottom pb-2">
+                                <div class="text-warning">{% if v.estrellas == 5 %}⭐⭐⭐⭐⭐{% elif v.estrellas == 4 %}⭐⭐⭐⭐{% else %}⭐⭐⭐{% endif %}</div>
+                                <p class="small mb-1">"{{ v.comentario }}"</p><small class="text-muted" style="font-size: 0.7em;">{{ v.fecha|date:"d M Y" }}</small>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted small">Nadie ha opinado sobre esta empresa aún.</p>
+                        {% endfor %}
+                        <button class="btn btn-outline-dark btn-sm w-100 mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#formVal">✍️ Escribir opinión</button>
+                        <div class="collapse mt-3" id="formVal"><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit" class="btn btn-dark btn-sm w-100">Enviar</button></form></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

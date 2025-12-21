@@ -1,0 +1,15 @@
+# Archivos de sistema y Python
+__pycache__/
+*.py[cod]
+*$py.class
+db.sqlite3
+.DS_Store
+
+# Entornos virtuales (si usaste venv)
+venv/
+env/
+.env
+
+# Archivos estáticos y media
+staticfiles/
+media/

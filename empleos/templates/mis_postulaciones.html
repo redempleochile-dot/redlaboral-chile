@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mis Postulaciones | EmpleosChile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container"><a class="navbar-brand fw-bold" href="/">🇨🇱 EmpleosChile</a><a href="/" class="btn btn-outline-light btn-sm">Volver al Home</a></div>
+    </nav>
+    <div class="container">
+        <h2 class="mb-4">📅 Historial de Postulaciones</h2>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body text-center">
+                        {% if candidato.foto %}<img src="{{ candidato.foto.url }}" class="rounded-circle mb-3" width="80" height="80" style="object-fit: cover;">{% endif %}
+                        <h5 class="fw-bold">{{ candidato.nombre }}</h5>
+                        <p class="text-muted small">{{ candidato.titular }}</p>
+                        <hr>
+                        <div class="d-grid gap-2">
+                            <a href="/publicar-perfil/" class="btn btn-outline-primary btn-sm">✏️ Editar mi CV</a>
+                            <a href="/candidato/{{ candidato.id }}/" class="btn btn-outline-dark btn-sm">👁️ Ver mi Perfil Público</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                {% if postulaciones %}
+                    <div class="list-group shadow-sm">
+                        {% for post in postulaciones %}
+                            <div class="list-group-item list-group-item-action p-3 border-0 border-bottom">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-1 text-primary fw-bold">{{ post.oferta.titulo }}</h5>
+                                        <small class="text-muted">{{ post.oferta.empresa }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge {% if post.estado == 'ENV' %}bg-secondary{% elif post.estado == 'VIS' %}bg-info{% elif post.estado == 'INT' %}bg-success{% else %}bg-danger{% endif %} rounded-pill px-3 py-2">
+                                            {{ post.get_estado_display }}
+                                        </span>
+                                        <br>
+                                        <small class="text-muted" style="font-size: 0.7em;">{{ post.fecha|date:"d M Y" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="fs-1 mb-3">📭</div>
+                        <h4>Aún no has postulado a nada</h4>
+                        <p class="text-muted">Busca ofertas y envía tu CV con un clic.</p>
+                        <a href="/" class="btn btn-primary">Buscar Empleos</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

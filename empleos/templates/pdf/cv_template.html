@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: Helvetica, Arial, sans-serif; color: #333; line-height: 1.5; }
+        .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 20px; }
+        .h1 { font-size: 24px; font-weight: bold; margin: 0; color: #1e3a8a; }
+        .subtitle { font-size: 14px; color: #666; margin-top: 5px; }
+        .section { margin-bottom: 20px; }
+        .section-title { font-size: 16px; font-weight: bold; color: #2563eb; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase; }
+        .item { margin-bottom: 10px; }
+        .label { font-weight: bold; font-size: 12px; color: #555; }
+        .value { font-size: 13px; }
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="h1">{{ candidato.nombre|upper }}</div>
+        <div class="subtitle">{{ candidato.titular }}</div>
+        <div class="subtitle">{{ candidato.email }} | {{ candidato.telefono }} | {{ candidato.get_region_display }}</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Perfil Profesional</div>
+        <div class="value">{{ candidato.presentacion|default:"Sin presentación." }}</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Información Laboral</div>
+        <div class="item"><span class="label">Experiencia:</span> <span class="value">{{ candidato.get_experiencia_display }}</span></div>
+        <div class="item"><span class="label">Rubro:</span> <span class="value">{{ candidato.get_rubro_display }}</span></div>
+        <div class="item"><span class="label">Disponibilidad:</span> <span class="value">{{ candidato.disponibilidad }}</span></div>
+        {% if candidato.pretension_renta %}
+        <div class="item"><span class="label">Pretensión de Renta:</span> <span class="value">${{ candidato.pretension_renta }}</span></div>
+        {% endif %}
+    </div>
+
+    {% if candidato.linkedin %}
+    <div class="section">
+        <div class="section-title">Enlaces</div>
+        <div class="item"><span class="label">LinkedIn:</span> <span class="value">{{ candidato.linkedin }}</span></div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        Generado automáticamente por Red Laboral Chile - www.redlaboral.cl
+    </div>
+</body>
+</html>
