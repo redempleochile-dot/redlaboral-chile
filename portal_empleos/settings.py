@@ -11,7 +11,7 @@ SECRET_KEY = 'django-insecure-cambiar-esta-clave-por-seguridad-en-produccion'
 # Cuando formalices la empresa, esto se cambia a False.
 DEBUG = True
 
-# Permitir cualquier host (Necesario para Render/Nube y Ngrok)
+# Permitir cualquier host (Necesario para Railway)
 ALLOWED_HOSTS = ['*']
 
 # --- APLICACIONES INSTALADAS ---
@@ -91,7 +91,8 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Compresión para la nube (WhiteNoise)
+# Compresión para la nube (WhiteNoise) - IMPORTANTE
+# Si da error en el deploy, cambiar a 'whitenoise.storage.CompressedStaticFilesStorage'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # --- ARCHIVOS MULTIMEDIA (SUBIDOS POR USUARIOS: CV, FOTOS, VIDEOS) ---
@@ -107,6 +108,27 @@ LOGIN_URL = 'login'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ==============================================================================
+#  CONFIGURACIÓN RAILWAY Y SEGURIDAD (CRÍTICO)
+# ==============================================================================
+
+# Lista de sitios de confianza (Evita error CSRF / Forbidden)
+CSRF_TRUSTED_ORIGINS = [
+    'https://web-production-88395.up.railway.app',  # <--- TU LINK DE RAILWAY
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
+
+# Configuración SSL para Railway (Evita bucles de redirección)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Configuración de Cookies
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
+
 
 # --- CONFIGURACIÓN VISUAL JAZZMIN (PANEL EJECUTIVO) ---
 JAZZMIN_SETTINGS = {
@@ -162,20 +184,3 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
-
-# ==============================================================================
-#  CONFIGURACIÓN NUEVA PARA NGROK (CORRIGE ERROR 403 Forbidden)
-# ==============================================================================
-
-# Lista de sitios de confianza para enviar formularios
-CSRF_TRUSTED_ORIGINS = [
-    'https://web-production-88395.up.railway.app', # <--- TU LINK ACTUAL
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-]
-
-# Configuración de Cookies para compatibilidad HTTPS/HTTP
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SAMESITE = 'None'
