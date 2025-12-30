@@ -169,7 +169,7 @@ JAZZMIN_UI_TWEAKS = {
 
 # Lista de sitios de confianza para enviar formularios
 CSRF_TRUSTED_ORIGINS = [
-    'https://nonetheless-unprescinded-natisha.ngrok-free.dev', # <--- TU LINK ACTUAL
+    'https://web-production-88395.up.railway.app', # <--- TU LINK ACTUAL
     'http://127.0.0.1:8000',
     'http://localhost:8000',
 ]
