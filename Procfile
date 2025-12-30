@@ -1,0 +1,1 @@
+web: gunicorn portal_empleos.wsgi --log-file -
