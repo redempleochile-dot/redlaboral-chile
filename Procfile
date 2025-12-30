@@ -1,1 +1,1 @@
-web: gunicorn portal_empleos.wsgi --log-file -
+web: gunicorn portal_empleos.wsgi:application --bind 0.0.0.0:$PORT
