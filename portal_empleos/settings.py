@@ -11,7 +11,7 @@ SECRET_KEY = 'django-insecure-cambiar-esta-clave-por-seguridad-en-produccion'
 # Cuando formalices la empresa, esto se cambia a False.
 DEBUG = True
 
-# Permitir cualquier host (Necesario para Render/Nube)
+# Permitir cualquier host (Necesario para Render/Nube y Ngrok)
 ALLOWED_HOSTS = ['*']
 
 # --- APLICACIONES INSTALADAS ---
@@ -162,3 +162,20 @@ JAZZMIN_UI_TWEAKS = {
         "success": "btn-success"
     }
 }
+
+# ==============================================================================
+#  CONFIGURACIÓN NUEVA PARA NGROK (CORRIGE ERROR 403 Forbidden)
+# ==============================================================================
+
+# Lista de sitios de confianza para enviar formularios
+CSRF_TRUSTED_ORIGINS = [
+    'https://nonetheless-unprescinded-natisha.ngrok-free.dev', # <--- TU LINK ACTUAL
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+]
+
+# Configuración de Cookies para compatibilidad HTTPS/HTTP
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'None'
