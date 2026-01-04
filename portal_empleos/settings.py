@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo')
 
 # DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ  <-- BORRA O COMENTA ESTA
-DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
+DEBUG = True
 
 # Hosts permitidos: Acepta todo para evitar problemas en la nube
 ALLOWED_HOSTS = ['*']
