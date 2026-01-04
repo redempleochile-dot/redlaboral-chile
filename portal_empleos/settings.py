@@ -133,7 +133,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 📧 CONFIGURACIÓN DE CORREO (TRUCO GOOGLEMAIL)
 # =========================================================
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # 👇 CAMBIO MÁGICO: Usamos este host para evitar error IPv6
 EMAIL_HOST = 'smtp.googlemail.com' 
