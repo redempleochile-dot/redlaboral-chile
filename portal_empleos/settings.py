@@ -126,18 +126,16 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # =========================================================
-# 📧 CONFIGURACIÓN DE CORREO (GMAIL SSL - PUERTO 465)
+# 📧 CONFIGURACIÓN DE CORREO
 # =========================================================
-# Esta configuración es la correcta para Railway + Gmail
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465       # Puerto seguro SSL
-EMAIL_USE_TLS = False  # Apagamos TLS
-EMAIL_USE_SSL = True   # Prendemos SSL
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
 
-# 👇 AQUÍ ESTABA EL ERROR ANTES: AHORA ESTÁ CORREGIDO
-# Python buscará la variable por su NOMBRE ("KEY"), no por su valor.
+# 👇 AQUÍ ESTÁ LA CORRECCIÓN CLAVE
+# Pedimos la variable por su ETIQUETA ("EMAIL_HOST_USER"), no por su contenido.
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
