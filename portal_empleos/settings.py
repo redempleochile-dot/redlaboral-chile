@@ -129,18 +129,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 📧 CONFIGURACIÓN DE CORREO (VUELTA AL PUERTO 587 - TLS)
 # =========================================================
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+# =========================================================
+# 📧 CONFIGURACIÓN DE CORREO (TRUCO GOOGLEMAIL)
+# =========================================================
 
-# 👇 CAMBIO CLAVE: Usamos puerto 587 y TLS (La puerta estándar)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# 👇 CAMBIO MÁGICO: Usamos este host para evitar error IPv6
+EMAIL_HOST = 'smtp.googlemail.com' 
+
 EMAIL_PORT = 587
-EMAIL_USE_TLS = True    # <--- Prendemos TLS
-EMAIL_USE_SSL = False   # <--- Apagamos SSL
+EMAIL_USE_TLS = True    # TLS Encendido
+EMAIL_USE_SSL = False   # SSL Apagado
 
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
 # =========================================================
 # ☁️ CLOUDINARY (Imágenes)
 # =========================================================
