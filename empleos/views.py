@@ -37,23 +37,25 @@ from .forms import (
     ValoracionForm, SuscriptorForm, PerfilEmpresaForm, ReporteForm, PreguntaForm, RegistroForm
 )
 
-# --- UTILIDAD: HILO PARA EMAIL (Evita que la página se congele al enviar) ---
+# --- UTILIDAD: HILO PARA EMAIL (ANTÍDOTO PARA EL ERROR 502) ---
 class EmailThread(threading.Thread):
-    def __init__(self, subject, html_content, recipient_list):
+    def __init__(self, subject, message, recipient_list):
         self.subject = subject
+        self.message = message
         self.recipient_list = recipient_list
-        self.html_content = html_content
         threading.Thread.__init__(self)
 
     def run(self):
         try:
+            # Enviamos el correo en segundo plano
             send_mail(
                 self.subject, 
-                self.html_content, 
+                self.message, 
                 settings.EMAIL_HOST_USER, 
                 self.recipient_list, 
-                fail_silently=False # Queremos ver errores en consola si los hay
+                fail_silently=False
             )
+            print(f"✅ Correo enviado en segundo plano a: {self.recipient_list}")
         except Exception as e:
             print(f"⚠️ Error enviando email en segundo plano: {e}")
 
@@ -169,7 +171,7 @@ def publicar_empleo(request):
             oferta.usuario = request.user
             oferta.save()
             
-            # Enviar Alertas de Empleo por correo
+            # USO DEL HILO PARA ALERTAS (Evita congelamiento)
             try:
                 palabras = oferta.titulo.split() if oferta.titulo else []
                 query = Q(region=oferta.region) & (Q(palabra_clave__icontains=oferta.titulo) | Q(palabra_clave__in=palabras))
@@ -177,6 +179,7 @@ def publicar_empleo(request):
                 destinatarios = list(set([alerta.email for alerta in alertas_coincidentes]))
                 if destinatarios: 
                     mensaje = f"Nueva oferta: {oferta.titulo}. Postula aquí: https://www.redlaboral.cl/oferta/{oferta.id}/"
+                    # Disparamos el hilo en segundo plano
                     EmailThread(f"🔔 Alerta: {oferta.titulo}", mensaje, destinatarios).start()
             except Exception as e: 
                 print(f"Error alertas: {e}")
@@ -383,29 +386,24 @@ def marcar_leidas(request):
     Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
-# --- USUARIOS Y AUTENTICACIÓN (CORREGIDO) ---
+# --- USUARIOS Y AUTENTICACIÓN (CORREGIDO Y OPTIMIZADO) ---
 
 def registro_usuario(request):
-    # 1. Si el usuario envía el formulario
+    # 1. Si el usuario envía el formulario (POST)
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             
-            # Intento de envío de correo
-            try:
-                mensaje = f"Hola {user.first_name},\n\nBienvenido a EmpleosChile. Tu cuenta ha sido creada exitosamente."
-                send_mail(
-                    "¡Bienvenido a la comunidad!", 
-                    mensaje, 
-                    settings.EMAIL_HOST_USER, 
-                    [user.email], 
-                    fail_silently=False
-                )
-            except Exception as e:
-                # Si falla el correo, lo mostramos en consola pero NO detenemos el registro
-                print(f"❌ Error enviando correo de bienvenida: {e}")
+            # --- CORRECCIÓN CRÍTICA 502: USO DE THREADING ---
+            # Lanzamos el correo en segundo plano para no congelar la página
+            mensaje = f"Hola {user.first_name},\n\nBienvenido a EmpleosChile. Tu cuenta ha sido creada exitosamente."
+            EmailThread(
+                "¡Bienvenido a la comunidad!", 
+                mensaje, 
+                [user.email]
+            ).start() # .start() inicia el proceso paralelo y sigue adelante
             
             messages.success(request, f'¡Cuenta creada exitosamente! Bienvenido, {user.first_name}.')
             return redirect('home')
@@ -416,7 +414,7 @@ def registro_usuario(request):
     else:
         form = RegistroForm()
         
-    # El render SIEMPRE debe estar fuera del 'else', alineado con el primer 'if'
+    # El render SIEMPRE debe estar aquí (fuera del else) para evitar ValueError
     return render(request, 'registration/registro.html', {'form': form})
 
 def logout_usuario(request): 
@@ -503,7 +501,6 @@ def mapa_empleos(request):
     for oferta in ofertas:
         coords = COORDENADAS_REGIONES.get(oferta.region)
         if coords: 
-            # Pequeña variación aleatoria para que no se superpongan si están en la misma ciudad
             marcadores.append({
                 'lat': coords[0] + random.uniform(-0.02, 0.02), 
                 'lng': coords[1] + random.uniform(-0.02, 0.02), 
