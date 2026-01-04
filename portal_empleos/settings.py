@@ -66,6 +66,7 @@ WSGI_APPLICATION = 'portal_empleos.wsgi.application'
 
 # --- BASE DE DATOS ---
 # Usamos SQLite por defecto (ideal para prototipo inicial)
+
 import dj_database_url
 import os
 
