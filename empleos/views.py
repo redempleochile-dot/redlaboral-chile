@@ -372,15 +372,26 @@ def registro_usuario(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
+            
+            # 👇 BLOQUE DE CORREO MODIFICADO PARA DEBUG 👇
             try:
                 mensaje = f"Hola {user.first_name},\n\nBienvenido a EmpleosChile."
-                send_mail("¡Bienvenido!", mensaje, settings.EMAIL_HOST_USER, [user.email], fail_silently=True)
-            except: pass
+                # Cambiamos fail_silently a FALSE para que si falla, avise
+                send_mail(
+                    "¡Bienvenido a la comunidad!", 
+                    mensaje, 
+                    settings.EMAIL_HOST_USER, 
+                    [user.email], 
+                    fail_silently=False 
+                )
+                print("✅ CORREO ENVIADO CON ÉXITO") # Esto saldrá en los logs
+            except Exception as e:
+                print(f"❌ ERROR CRÍTICO ENVIANDO CORREO: {e}") # <--- ¡ESTO QUEREMOS VER!
+            # 👆 FIN DEL BLOQUE MODIFICADO 👆
+
             messages.success(request, f'¡Cuenta creada exitosamente! Bienvenido, {user.first_name}.')
             return redirect('home')
-        else: messages.error(request, "Corrige los errores.")
-    else: form = RegistroForm()
-    return render(request, 'registration/registro.html', {'form': form})
+        # ... resto del código ...
 
 def logout_usuario(request): 
     logout(request)
