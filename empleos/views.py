@@ -179,6 +179,9 @@ def detalle_oferta(request, id):
 
 @login_required # RECOMENDADO: Obligar login para publicar
 def publicar_empleo(request):
+    if not request.user.is_authenticated:
+        messages.warning(request, "⚠️ Debes iniciar sesión o registrarte para publicar tu perfil.")
+        return redirect('login') # O 'registro_usuario' si prefieres
     if request.method == 'POST':
         form = NuevaOfertaForm(request.POST, request.FILES)
         if form.is_valid():
@@ -395,8 +398,10 @@ def detalle_candidato(request, id):
     return render(request, 'detalle_candidato.html', {'candidato': candidato, 'puede_ver_contacto': puede_ver_contacto})
 
 # 👇👇👇 AQUÍ ESTÁ LA CORRECCIÓN CLAVE PARA EL ERROR ANONYMOUS USER 👇👇👇
-@login_required 
 def publicar_candidato(request):
+    if not request.user.is_authenticated:
+        messages.warning(request, "⚠️ Debes iniciar sesión o registrarte para publicar tu perfil.")
+        return redirect('login') # O 'registro_usuario' si prefieres
     # Detectar si el usuario ya tiene un perfil (para editarlo) o si es nuevo
     try:
         candidato = request.user.candidato

@@ -9,16 +9,23 @@ import cloudinary.api
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =========================================================
-# SEGURIDAD E INFRAESTRUCTURA
+# SEGURIDAD E INFRAESTRUCTURA (CORREGIDO)
 # =========================================================
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo')
 
-# Mantenemos DEBUG en True UN MOMENTO MÁS para verificar que todo cargue.
-# Cuando todo funcione, cambiaremos esto a: 'RAILWAY_ENVIRONMENT' not in os.environ
-DEBUG = True
+# IMPORTANTE: Cambia esto a False una vez que confirmes que el Admin funciona
+DEBUG = True 
 
 ALLOWED_HOSTS = ['*']
+
+# 👇 ESTAS 3 LÍNEAS ARREGLAN EL ERROR DEL ADMIN (CSRF) 👇
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True  # Fuerza a todos a usar HTTPS (Candado seguro)
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# Confianza en los dominios de Railway
 CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
 
 # =========================================================
