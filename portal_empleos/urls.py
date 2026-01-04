@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 from empleos.sitemaps import OfertaSitemap
+from empleos.views import prueba_email
 
 # Importamos TODAS las vistas desde un solo lugar para orden
 from empleos.views import (
@@ -97,6 +98,8 @@ urlpatterns = [
     # LEGALES
     path('terminos/', terminos_condiciones, name='terminos'),
     path('privacidad/', politica_privacidad, name='privacidad'),
+
+    path('prueba-email/', prueba_email, name='prueba_email'),
 ]
 
 if settings.DEBUG:

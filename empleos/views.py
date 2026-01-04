@@ -510,3 +510,17 @@ def mapa_empleos(request):
                 'tipo': oferta.get_tipo_display()
             })
     return render(request, 'mapa.html', {'marcadores_json': json.dumps(marcadores)})
+
+# --- DEBUG DE CORREO (Borrar después de probar) ---
+def prueba_email(request):
+    try:
+        send_mail(
+            'Prueba de Fuego 🔥',
+            'Si lees esto, ¡la configuración de correo funciona perfectamente!',
+            settings.EMAIL_HOST_USER,
+            ['millapeld@gmail.com'], # <--- CAMBIA ESTO POR TU CORREO REAL PARA PROBAR
+            fail_silently=False,
+        )
+        return HttpResponse("✅ ¡ÉXITO! El correo fue enviado. Revisa tu bandeja de entrada (y Spam).")
+    except Exception as e:
+        return HttpResponse(f"❌ ERROR DETALLADO: {e}")
