@@ -1,29 +1,28 @@
 import os
 from pathlib import Path
-import dj_database_url  # Importante para PostgreSQL
+import dj_database_url
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Construcción de rutas dentro del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =========================================================
-# CONFIGURACIÓN DE SEGURIDAD
+# SEGURIDAD E INFRAESTRUCTURA
 # =========================================================
 
-# CLAVE SECRETA: Intenta leerla de Railway, si no hay, usa una por defecto para desarrollo
+# Clave secreta: Intenta leerla de Railway, si no, usa una por defecto para local
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo')
 
-# DEBUG: En Railway debe ser False (producción), en tu PC True.
-# Si la variable 'RAILWAY_ENVIRONMENT' existe, asume producción.
+# DEBUG: Falso en producción (Railway), Verdadero en tu PC
 DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
 
-# HOSTS PERMITIDOS: Acepta todo para evitar el error "DisallowedHost"
+# Hosts permitidos: Acepta todo para evitar problemas en la nube
 ALLOWED_HOSTS = ['*']
 
-# ORIGENES CONFIABLES (Para evitar problemas con el Login en HTTPS)
+# Orígenes confiables (Importante para el Login en Railway)
 CSRF_TRUSTED_ORIGINS = ['https://*.railway.app']
 
 # =========================================================
-# APLICACIONES
+# APLICACIONES INSTALADAS
 # =========================================================
 
 INSTALLED_APPS = [
@@ -34,13 +33,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Tus aplicaciones (Asegúrate de que el nombre coincida con tus carpetas)
-    'empleos',  # <--- CONFIRMA QUE ESTE ES EL NOMBRE DE TU APP
+    # Tu aplicación (Confirma que la carpeta se llama así)
+    'empleos', 
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # <--- ESENCIAL PARA RAILWAY
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # <--- MOTOR DE ARCHIVOS ESTÁTICOS
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -49,12 +48,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'portal_empleos.urls' # <--- CONFIRMA EL NOMBRE DE TU PROYECTO
+ROOT_URLCONF = 'portal_empleos.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [], # Puedes poner [os.path.join(BASE_DIR, 'templates')] si usas carpeta global
+        # 👇 AQUÍ ESTÁ LA CORRECCIÓN DEL ERROR 500 👇
+        'DIRS': [os.path.join(BASE_DIR, 'templates')], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -67,21 +67,21 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'portal_empleos.wsgi.application' # <--- CONFIRMA EL NOMBRE
+WSGI_APPLICATION = 'portal_empleos.wsgi.application'
 
 # =========================================================
-# BASE DE DATOS (EL CORAZÓN ROBUSTO) 🐘
+# BASE DE DATOS (POSTGRESQL + SQLITE)
 # =========================================================
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3', # En tu PC usa esto
-        conn_max_age=600    # Mantiene la conexión viva para rapidez
+        default='sqlite:///db.sqlite3', 
+        conn_max_age=600
     )
 }
 
 # =========================================================
-# VALIDACIÓN DE CONTRASEÑAS
+# VALIDADORES DE CONTRASEÑA
 # =========================================================
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -95,27 +95,20 @@ AUTH_PASSWORD_VALIDATORS = [
 # IDIOMA Y ZONA HORARIA
 # =========================================================
 
-LANGUAGE_CODE = 'es-cl'  # Español Chile
+LANGUAGE_CODE = 'es-cl'
 TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_TZ = True
 
 # =========================================================
-# ARCHIVOS ESTÁTICOS (CSS, JS, IMÁGENES)
+# ARCHIVOS ESTÁTICOS Y MEDIA
 # =========================================================
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Configuración de WhiteNoise para servir archivos comprimidos y cacheados
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Para subir imágenes (Perfil, Currículums, etc)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# =========================================================
-# AUTO FIELD
-# =========================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
