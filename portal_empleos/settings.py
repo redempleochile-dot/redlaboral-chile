@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 import dj_database_url
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 # Construcción de rutas dentro del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,17 +12,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SEGURIDAD E INFRAESTRUCTURA
 # =========================================================
 
-# Clave secreta: Intenta leerla de Railway, si no, usa una por defecto para local
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo')
 
-# DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ  <-- BORRA O COMENTA ESTA
+# Mantenemos DEBUG en True UN MOMENTO MÁS para verificar que todo cargue.
+# Cuando todo funcione, cambiaremos esto a: 'RAILWAY_ENVIRONMENT' not in os.environ
 DEBUG = True
 
-# Hosts permitidos: Acepta todo para evitar problemas en la nube
 ALLOWED_HOSTS = ['*']
-
-# Orígenes confiables (Importante para el Login en Railway)
-CSRF_TRUSTED_ORIGINS = ['https://*.railway.app']
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
 
 # =========================================================
 # APLICACIONES INSTALADAS
@@ -32,16 +32,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.humanize',
+    'django.contrib.humanize',  # Para formatos de fecha y moneda
     
+    # LIBRERÍAS DE NUBE (Orden importante)
     'cloudinary_storage',
     'cloudinary',
+    
     'empleos', 
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # <--- MOTOR DE ARCHIVOS ESTÁTICOS
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -55,8 +57,7 @@ ROOT_URLCONF = 'portal_empleos.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # 👇 AQUÍ ESTÁ LA CORRECCIÓN DEL ERROR 500 👇
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], 
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,7 +73,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'portal_empleos.wsgi.application'
 
 # =========================================================
-# BASE DE DATOS (POSTGRESQL + SQLITE)
+# BASE DE DATOS
 # =========================================================
 
 DATABASES = {
@@ -103,7 +104,7 @@ USE_I18N = True
 USE_TZ = True
 
 # =========================================================
-# ARCHIVOS ESTÁTICOS Y MEDIA
+# ARCHIVOS ESTÁTICOS Y CORREO
 # =========================================================
 
 STATIC_URL = 'static/'
@@ -113,23 +114,40 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-# =========================================================
-# CONFIGURACIÓN DE CORREO (MODO PRUEBA)
-# =========================================================
-
-# Esto hace que los correos NO se envíen, sino que aparezcan en el Log de Railway.
-# ¡Es perfecto para arreglar el Error 500 sin configurar Gmail todavía!
+# Email en consola para evitar errores 500 si no hay servidor real
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 # =========================================================
-# ALMACENAMIENTO EN LA NUBE (CLOUDINARY)
+# CONFIGURACIÓN INTELIGENTE DE CLOUDINARY
 # =========================================================
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
+CLOUDINARY_URL = os.environ.get('CLOUDINARY_URL')
 
-# Decirle a Django que use esto para guardar archivos (CVs, Fotos)
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+if CLOUDINARY_URL:
+    # 1. Parsear la URL larga que nos da Railway (cloudinary://Key:Secret@CloudName)
+    try:
+        # Quitamos el prefijo
+        url_body = CLOUDINARY_URL.replace("cloudinary://", "")
+        # Separamos credenciales del nombre de la nube
+        creds_part, cloud_name = url_body.split("@")
+        # Separamos Key y Secret
+        api_key, api_secret = creds_part.split(":")
+
+        # 2. Configurar el Almacenamiento (Para subir archivos)
+        CLOUDINARY_STORAGE = {
+            'CLOUD_NAME': cloud_name,
+            'API_KEY': api_key,
+            'API_SECRET': api_secret,
+        }
+        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        
+        # 3. Configurar la Librería General (Para que funcionen los templates y no salga el error de cloud_name)
+        cloudinary.config(
+            cloud_name=cloud_name,
+            api_key=api_key,
+            api_secret=api_secret
+        )
+    except Exception as e:
+        print(f"Error configurando Cloudinary: {e}")
