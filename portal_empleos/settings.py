@@ -16,7 +16,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal')
 
 # AUTOMÁTICO: Si estamos en Railway (Producción), DEBUG será False. En tu PC, será True.
 # (Asegúrate de no tener el typo 'os.environs', es 'os.environ')
-DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
