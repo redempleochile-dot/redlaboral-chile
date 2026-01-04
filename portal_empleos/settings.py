@@ -34,7 +34,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     
-    # Tu aplicación (Confirma que la carpeta se llama así)
+    'cloudinary_storage',
+    'cloudinary',
     'empleos', 
 ]
 
@@ -120,3 +121,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Esto hace que los correos NO se envíen, sino que aparezcan en el Log de Railway.
 # ¡Es perfecto para arreglar el Error 500 sin configurar Gmail todavía!
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# =========================================================
+# ALMACENAMIENTO EN LA NUBE (CLOUDINARY)
+# =========================================================
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+# Decirle a Django que use esto para guardar archivos (CVs, Fotos)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
