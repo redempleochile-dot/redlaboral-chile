@@ -113,3 +113,10 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# =========================================================
+# CONFIGURACIÓN DE CORREO (MODO PRUEBA)
+# =========================================================
+
+# Esto hace que los correos NO se envíen, sino que aparezcan en el Log de Railway.
+# ¡Es perfecto para arreglar el Error 500 sin configurar Gmail todavía!
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
