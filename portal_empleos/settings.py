@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo')
 
 # DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ  <-- BORRA O COMENTA ESTA
-DEBUG = True  # <-- PON ESTO (¡Es peligroso, pero necesario por 5 minutos!)
+DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
 
 # Hosts permitidos: Acepta todo para evitar problemas en la nube
 ALLOWED_HOSTS = ['*']
@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     
     # Tu aplicación (Confirma que la carpeta se llama así)
     'empleos', 
