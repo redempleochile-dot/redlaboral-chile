@@ -115,18 +115,20 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # =========================================================
-# 📧 CONFIGURACIÓN DE CORREO REAL (SMTP)
+# 📧 CONFIGURACIÓN DE CORREO (VERSIÓN SSL BLINDADA)
 # =========================================================
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+
+# 👇 CAMBIO CLAVE: Usamos puerto 465 y SSL
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False   # <--- Apagamos TLS
+EMAIL_USE_SSL = True    # <--- Prendemos SSL
+
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # =========================================================
 # ☁️ CLOUDINARY (Solución Definitiva)
