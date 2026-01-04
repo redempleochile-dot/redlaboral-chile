@@ -1,22 +1,32 @@
 import os
 from pathlib import Path
+import dj_database_url  # Importante para PostgreSQL
 
-# Construye las rutas dentro del proyecto
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SEGURIDAD: En producción real esto debería ser una variable de entorno
-SECRET_KEY = 'django-insecure-cambiar-esta-clave-por-seguridad-en-produccion'
+# =========================================================
+# CONFIGURACIÓN DE SEGURIDAD
+# =========================================================
 
-# IMPORTANTE: Dejamos DEBUG=True para ver errores en tu primera prueba. 
-# Cuando formalices la empresa, esto se cambia a False.
-DEBUG = True
+# CLAVE SECRETA: Intenta leerla de Railway, si no hay, usa una por defecto para desarrollo
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo')
 
-# Permitir cualquier host (Necesario para Railway)
+# DEBUG: En Railway debe ser False (producción), en tu PC True.
+# Si la variable 'RAILWAY_ENVIRONMENT' existe, asume producción.
+DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
+
+# HOSTS PERMITIDOS: Acepta todo para evitar el error "DisallowedHost"
 ALLOWED_HOSTS = ['*']
 
-# --- APLICACIONES INSTALADAS ---
+# ORIGENES CONFIABLES (Para evitar problemas con el Login en HTTPS)
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app']
+
+# =========================================================
+# APLICACIONES
+# =========================================================
+
 INSTALLED_APPS = [
-    'jazzmin',                      # <--- PANEL ADMINISTRATIVO (Va primero)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -24,18 +34,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Apps de Utilidad
-    'django.contrib.humanize',      # Formato de números ($ 1.000)
-    'django.contrib.sitemaps',      # SEO para Google
-    
-    # Tu Aplicación Principal
-    'empleos',
+    # Tus aplicaciones (Asegúrate de que el nombre coincida con tus carpetas)
+    'empleos',  # <--- CONFIRMA QUE ESTE ES EL NOMBRE DE TU APP
 ]
 
-# --- MIDDLEWARE (Intermediarios de seguridad y carga) ---
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- CRÍTICO PARA LA NUBE (Estilos CSS)
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # <--- ESENCIAL PARA RAILWAY
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -44,12 +49,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'portal_empleos.urls'
+ROOT_URLCONF = 'portal_empleos.urls' # <--- CONFIRMA EL NOMBRE DE TU PROYECTO
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [], # Django busca en las carpetas 'templates' de cada app
+        'DIRS': [], # Puedes poner [os.path.join(BASE_DIR, 'templates')] si usas carpeta global
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -62,22 +67,23 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'portal_empleos.wsgi.application'
+WSGI_APPLICATION = 'portal_empleos.wsgi.application' # <--- CONFIRMA EL NOMBRE
 
-# --- BASE DE DATOS ---
-# Usamos SQLite por defecto (ideal para prototipo inicial)
-
-import dj_database_url
-import os
+# =========================================================
+# BASE DE DATOS (EL CORAZÓN ROBUSTO) 🐘
+# =========================================================
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'),
-        conn_max_age=600
+        default='sqlite:///db.sqlite3', # En tu PC usa esto
+        conn_max_age=600    # Mantiene la conexión viva para rapidez
     )
 }
 
-# --- VALIDACIÓN DE CONTRASEÑAS ---
+# =========================================================
+# VALIDACIÓN DE CONTRASEÑAS
+# =========================================================
+
 AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
     { 'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
@@ -85,106 +91,31 @@ AUTH_PASSWORD_VALIDATORS = [
     { 'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
-# --- INTERNACIONALIZACIÓN (CHILE) ---
-LANGUAGE_CODE = 'es-cl'
+# =========================================================
+# IDIOMA Y ZONA HORARIA
+# =========================================================
+
+LANGUAGE_CODE = 'es-cl'  # Español Chile
 TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_TZ = True
 
-# --- ARCHIVOS ESTÁTICOS (CSS, JS, IMÁGENES DEL SISTEMA) ---
+# =========================================================
+# ARCHIVOS ESTÁTICOS (CSS, JS, IMÁGENES)
+# =========================================================
+
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Compresión para la nube (WhiteNoise) - IMPORTANTE
-# Si da error en el deploy, cambiar a 'whitenoise.storage.CompressedStaticFilesStorage'
+# Configuración de WhiteNoise para servir archivos comprimidos y cacheados
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# --- ARCHIVOS MULTIMEDIA (SUBIDOS POR USUARIOS: CV, FOTOS, VIDEOS) ---
+# Para subir imágenes (Perfil, Currículums, etc)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# --- REDIRECCIONES DE LOGIN ---
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'home'
-LOGIN_URL = 'login'
-
-# --- EMAIL (Simulado en consola para desarrollo) ---
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# =========================================================
+# AUTO FIELD
+# =========================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# ==============================================================================
-#  CONFIGURACIÓN RAILWAY Y SEGURIDAD (CRÍTICO)
-# ==============================================================================
-
-# Lista de sitios de confianza (Evita error CSRF / Forbidden)
-CSRF_TRUSTED_ORIGINS = [
-    'https://web-production-88395.up.railway.app',  # <--- TU LINK DE RAILWAY
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-]
-
-# Configuración SSL para Railway (Evita bucles de redirección)
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Configuración de Cookies
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SAMESITE = 'None'
-
-
-# --- CONFIGURACIÓN VISUAL JAZZMIN (PANEL EJECUTIVO) ---
-JAZZMIN_SETTINGS = {
-    "site_title": "Red Laboral Admin",
-    "site_header": "Red Laboral Chile",
-    "site_brand": "Panel Ejecutivo",
-    "welcome_sign": "Bienvenido al Centro de Control",
-    "copyright": "Red Laboral Chile SpA",
-    "search_model": "auth.User",
-    "topmenu_links": [
-        {"name": "Ver Sitio Web", "url": "home", "permissions": ["auth.view_user"]},
-    ],
-    "show_sidebar": True,
-    "navigation_expanded": True,
-    "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-        "empleos.OfertaLaboral": "fas fa-briefcase",
-        "empleos.Candidato": "fas fa-user-graduate",
-        "empleos.PerfilEmpresa": "fas fa-building",
-        "empleos.Postulacion": "fas fa-file-signature",
-        "empleos.Notificacion": "fas fa-bell",
-        "empleos.ReporteOferta": "fas fa-exclamation-triangle",
-        "empleos.Pregunta": "fas fa-comments",
-        "empleos.Favorito": "fas fa-heart",
-        "empleos.AlertaEmpleo": "fas fa-envelope-open-text",
-    },
-}
-
-JAZZMIN_UI_TWEAKS = {
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "navbar-danger",
-    "accent": "accent-danger",
-    "navbar": "navbar-dark",
-    "no_navbar_border": False,
-    "navbar_fixed": False,
-    "layout_boxed": False,
-    "footer_fixed": False,
-    "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-danger",
-    "sidebar_nav_small_text": False,
-    "theme": "flatly",
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success"
-    }
-}
