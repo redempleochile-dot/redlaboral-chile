@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.urls import path
+from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 from empleos.sitemaps import OfertaSitemap
-from django.contrib.auth import views as auth_views
 
+# Importamos TODAS las vistas desde un solo lugar para orden
 from empleos.views import (
     pagina_inicio, detalle_oferta, publicar_empleo, 
     lista_candidatos, publicar_candidato, pagina_exito, 
@@ -20,20 +21,35 @@ from empleos.views import (
     lista_practicas, postular_oferta, gestion_candidatos,
     editar_empresa, reportar_oferta, marcar_leidas,
     pago_simulado, robots_txt, exportar_candidatos_csv,
-    lista_empresas, responder_pregunta, toggle_favorito, mis_favoritos # <--- ¡TODOS INCLUIDOS!
+    lista_empresas, responder_pregunta, toggle_favorito, mis_favoritos
 )
 
 sitemaps = {'ofertas': OfertaSitemap}
 
 urlpatterns = [
+    # ADMIN DE DJANGO
     path('admin/', admin.site.urls),
-    path('', pagina_inicio, name='home'),
     
+    # PORTADA
+    path('', pagina_inicio, name='home'),
+
+    # AUTENTICACIÓN PÚBLICA (Login y Registro Bonitos)
+    path('registro/', registro_usuario, name='registro_usuario'), # Nota: Le puse nombre 'registro_usuario' para coincidir con el HTML
+    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path('logout/', logout_usuario, name='logout'),
+    path('cuenta/eliminar/', eliminar_cuenta, name='eliminar_cuenta'),
+    
+    # RECUPERAR CONTRASEÑA (Vistas estándar de Django)
+    path('reset_password/', auth_views.PasswordResetView.as_view(template_name='registration/password_reset.html'), name='password_reset'),
+    path('reset_password_sent/', auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'), name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'), name='password_reset_confirm'),
+    path('reset_password_complete/', auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
+
     # OFERTAS
     path('oferta/<int:id>/', detalle_oferta, name='detalle'),
     path('oferta/editar/<uuid:token>/', editar_oferta, name='editar_oferta'),
     path('oferta/<int:id>/imprimir/', imprimir_oferta, name='imprimir'),
-    path('publicar/', publicar_empleo, name='publicar'),
+    path('publicar/', publicar_empleo, name='publicar'), # <-- Ahora redirigirá al login público
     path('practicas/', lista_practicas, name='lista_practicas'),
     
     # FAVORITOS, Q&A, EMPRESAS
@@ -77,16 +93,6 @@ urlpatterns = [
     path('exito/', pagina_exito, name='pagina_exito'),
     path('mis-postulaciones/', mis_postulaciones, name='mis_postulaciones'),
     path('mapa/', mapa_empleos, name='mapa_empleos'),
-    
-    # USUARIOS
-    path('registro/', registro_usuario, name='registro'),
-    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
-    path('logout/', logout_usuario, name='logout'),
-    path('cuenta/eliminar/', eliminar_cuenta, name='eliminar_cuenta'),
-    path('reset_password/', auth_views.PasswordResetView.as_view(template_name='registration/password_reset.html'), name='password_reset'),
-    path('reset_password_sent/', auth_views.PasswordResetDoneView.as_view(template_name='registration/password_reset_done.html'), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='registration/password_reset_confirm.html'), name='password_reset_confirm'),
-    path('reset_password_complete/', auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
 
     # LEGALES
     path('terminos/', terminos_condiciones, name='terminos'),
