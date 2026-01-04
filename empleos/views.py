@@ -7,6 +7,7 @@ import qrcode
 import time
 import csv
 import threading
+import os
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -24,7 +25,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
 
-# IMPORTACIÓN DE MODELOS Y FORMS
+# IMPORTACIÓN DE MODELOS Y FORMULARIOS
 from .models import (
     OfertaLaboral, Candidato, Noticia, Valoracion, Suscriptor, 
     AlertaEmpleo, Postulacion, PerfilEmpresa, ReporteOferta, Notificacion, 
@@ -36,10 +37,7 @@ from .forms import (
     ValoracionForm, SuscriptorForm, PerfilEmpresaForm, ReporteForm, PreguntaForm, RegistroForm
 )
 
-def pagina_exito(request): 
-    return render(request, 'exito.html')
-
-# --- UTILIDAD: HILO PARA EMAIL ---
+# --- UTILIDAD: HILO PARA EMAIL (Evita que la página se congele al enviar) ---
 class EmailThread(threading.Thread):
     def __init__(self, subject, html_content, recipient_list):
         self.subject = subject
@@ -49,15 +47,26 @@ class EmailThread(threading.Thread):
 
     def run(self):
         try:
-            send_mail(self.subject, self.html_content, settings.EMAIL_HOST_USER, self.recipient_list, fail_silently=True)
+            send_mail(
+                self.subject, 
+                self.html_content, 
+                settings.EMAIL_HOST_USER, 
+                self.recipient_list, 
+                fail_silently=False # Queremos ver errores en consola si los hay
+            )
         except Exception as e:
-            print(f"Error enviando email: {e}")
+            print(f"⚠️ Error enviando email en segundo plano: {e}")
 
-# --- VISTAS PRINCIPALES ---
+# --- VISTAS GENERALES ---
+
+def pagina_exito(request): 
+    return render(request, 'exito.html')
 
 def pagina_inicio(request):
+    # Obtener ofertas publicadas
     all_ofertas = OfertaLaboral.objects.filter(publicada=True).order_by('-es_destacado', '-fecha_publicacion')
     
+    # Filtros de búsqueda
     q = request.GET.get('q')
     if q: all_ofertas = all_ofertas.filter(Q(titulo__icontains=q) | Q(empresa__icontains=q))
     
@@ -72,11 +81,14 @@ def pagina_inicio(request):
         fecha_limite = timezone.now() - timedelta(days=int(dias))
         all_ofertas = all_ofertas.filter(fecha_publicacion__gte=fecha_limite)
 
+    # Paginación
     paginator = Paginator(all_ofertas, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
     
+    # Empresas destacadas
     empresas = PerfilEmpresa.objects.filter(es_destacada=True).exclude(logo='')
     
+    # Favoritos del usuario
     favoritos_ids = []
     if request.user.is_authenticated:
         favoritos_ids = Favorito.objects.filter(usuario=request.user).values_list('oferta_id', flat=True)
@@ -90,6 +102,8 @@ def pagina_inicio(request):
     }
     return render(request, 'lista_ofertas.html', context)
 
+# --- DETALLE DE OFERTA ---
+
 def detalle_oferta(request, id):
     oferta = get_object_or_404(OfertaLaboral, id=id)
     oferta.visitas += 1
@@ -97,6 +111,7 @@ def detalle_oferta(request, id):
     
     similares = OfertaLaboral.objects.filter(tipo=oferta.tipo, publicada=True).exclude(id=id).order_by('-fecha_publicacion')[:3]
     
+    # Lógica de Preguntas y Respuestas
     if request.method == 'POST' and 'btn_preguntar' in request.POST:
         if not request.user.is_authenticated: 
             messages.warning(request, "Inicia sesión para preguntar.")
@@ -114,6 +129,7 @@ def detalle_oferta(request, id):
     else: 
         form_pregunta = PreguntaForm()
 
+    # Algoritmo de Match (Compatibilidad)
     match_percent = None
     match_details = []
     if request.user.is_authenticated:
@@ -139,10 +155,9 @@ def detalle_oferta(request, id):
         'match_details': match_details, 'form_pregunta': form_pregunta
     })
 
-# --- EMPRESA ---
+# --- GESTIÓN DE EMPRESAS Y OFERTAS ---
 
 def publicar_empleo(request):
-    # VALIDACIÓN MANUAL DE LOGIN PARA EVITAR ERROR 404
     if not request.user.is_authenticated:
         messages.warning(request, "⚠️ Para publicar ofertas, inicia sesión o regístrate como empresa.")
         return redirect('login')
@@ -154,16 +169,17 @@ def publicar_empleo(request):
             oferta.usuario = request.user
             oferta.save()
             
-            # Alertas
+            # Enviar Alertas de Empleo por correo
             try:
                 palabras = oferta.titulo.split() if oferta.titulo else []
                 query = Q(region=oferta.region) & (Q(palabra_clave__icontains=oferta.titulo) | Q(palabra_clave__in=palabras))
                 alertas_coincidentes = AlertaEmpleo.objects.filter(query)
                 destinatarios = list(set([alerta.email for alerta in alertas_coincidentes]))
                 if destinatarios: 
-                    mensaje = f"Nueva oferta: {oferta.titulo}. Postula: http://{request.get_host()}/oferta/{oferta.id}/"
+                    mensaje = f"Nueva oferta: {oferta.titulo}. Postula aquí: https://www.redlaboral.cl/oferta/{oferta.id}/"
                     EmailThread(f"🔔 Alerta: {oferta.titulo}", mensaje, destinatarios).start()
-            except: pass
+            except Exception as e: 
+                print(f"Error alertas: {e}")
 
             return redirect('pagina_exito') 
     else: 
@@ -203,6 +219,8 @@ def lista_empresas(request):
 def perfil_empresa(request, nombre_empresa):
     perfil = PerfilEmpresa.objects.filter(nombre__iexact=nombre_empresa).first()
     ofertas = OfertaLaboral.objects.filter(empresa__icontains=nombre_empresa, publicada=True).order_by('-fecha_publicacion')
+    
+    # Formulario de Valoración
     if request.method == 'POST':
         form = ValoracionForm(request.POST)
         if form.is_valid(): 
@@ -216,10 +234,9 @@ def perfil_empresa(request, nombre_empresa):
     avg = val.aggregate(Avg('estrellas'))['estrellas__avg']
     return render(request, 'perfil_empresa.html', {'nombre_empresa': nombre_empresa, 'perfil': perfil, 'ofertas': ofertas, 'valoraciones': val, 'promedio': round(avg, 1) if avg else None, 'form': form})
 
-# --- CANDIDATOS ---
+# --- GESTIÓN DE CANDIDATOS ---
 
 def publicar_candidato(request):
-    # VALIDACIÓN MANUAL
     if not request.user.is_authenticated:
         messages.warning(request, "⚠️ Para publicar tu CV, inicia sesión o regístrate.")
         return redirect('login')
@@ -333,7 +350,7 @@ def mis_postulaciones(request):
     postulaciones = Postulacion.objects.filter(candidato=candidato).order_by('-fecha')
     return render(request, 'mis_postulaciones.html', {'postulaciones': postulaciones, 'candidato': candidato})
 
-# --- FAVORITOS Y ADMIN ---
+# --- FAVORITOS Y NOTIFICACIONES ---
 
 @login_required
 def toggle_favorito(request, id_oferta):
@@ -366,32 +383,41 @@ def marcar_leidas(request):
     Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
+# --- USUARIOS Y AUTENTICACIÓN (CORREGIDO) ---
+
 def registro_usuario(request):
+    # 1. Si el usuario envía el formulario
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             
-            # 👇 BLOQUE DE CORREO MODIFICADO PARA DEBUG 👇
+            # Intento de envío de correo
             try:
-                mensaje = f"Hola {user.first_name},\n\nBienvenido a EmpleosChile."
-                # Cambiamos fail_silently a FALSE para que si falla, avise
+                mensaje = f"Hola {user.first_name},\n\nBienvenido a EmpleosChile. Tu cuenta ha sido creada exitosamente."
                 send_mail(
                     "¡Bienvenido a la comunidad!", 
                     mensaje, 
                     settings.EMAIL_HOST_USER, 
                     [user.email], 
-                    fail_silently=False 
+                    fail_silently=False
                 )
-                print("✅ CORREO ENVIADO CON ÉXITO") # Esto saldrá en los logs
             except Exception as e:
-                print(f"❌ ERROR CRÍTICO ENVIANDO CORREO: {e}") # <--- ¡ESTO QUEREMOS VER!
-            # 👆 FIN DEL BLOQUE MODIFICADO 👆
-
+                # Si falla el correo, lo mostramos en consola pero NO detenemos el registro
+                print(f"❌ Error enviando correo de bienvenida: {e}")
+            
             messages.success(request, f'¡Cuenta creada exitosamente! Bienvenido, {user.first_name}.')
             return redirect('home')
-        # ... resto del código ...
+        else:
+            messages.error(request, "Por favor corrige los errores del formulario.")
+    
+    # 2. Si el usuario entra a la página (GET)
+    else:
+        form = RegistroForm()
+        
+    # El render SIEMPRE debe estar fuera del 'else', alineado con el primer 'if'
+    return render(request, 'registration/registro.html', {'form': form})
 
 def logout_usuario(request): 
     logout(request)
@@ -402,6 +428,8 @@ def logout_usuario(request):
 def eliminar_cuenta(request):
     if request.method == 'POST': request.user.delete(); messages.success(request, "Cuenta eliminada."); return redirect('home')
     return render(request, 'registration/eliminar_cuenta.html')
+
+# --- ADMIN PANEL ---
 
 @staff_member_required
 def panel_admin(request):
@@ -416,7 +444,7 @@ def panel_admin(request):
     context = {'kpi_ofertas': total_ofertas, 'kpi_candidatos': total_candidatos, 'kpi_usuarios': total_usuarios, 'labels_reg': json.dumps(labels_reg), 'data_reg': json.dumps(data_reg), 'data_pie': json.dumps([publicadas, pendientes])}
     return render(request, 'panel_admin.html', context)
 
-# --- EXTRAS ---
+# --- EXTRAS (MAPAS, BLOG, LEGALES) ---
 
 def crear_alerta(request):
     if request.method == 'POST': email = request.POST.get('email'); clave = request.POST.get('palabra_clave'); region = request.POST.get('region'); AlertaEmpleo.objects.create(email=email, palabra_clave=clave, region=region); messages.success(request, f"¡Alerta creada!")
@@ -455,19 +483,33 @@ def lista_practicas(request):
     practicas = OfertaLaboral.objects.filter(tipo='PRA', publicada=True).order_by('-fecha_publicacion')
     if request.GET.get('region'): practicas = practicas.filter(region=request.GET.get('region'))
     return render(request, 'lista_practicas.html', {'practicas': practicas, 'regiones': REGIONES_CHILE})
+
 def imprimir_oferta(request, id):
     oferta = get_object_or_404(OfertaLaboral, id=id); url_oferta = request.build_absolute_uri(f"/oferta/{oferta.id}/"); qr = qrcode.QRCode(version=1, box_size=10, border=4); qr.add_data(url_oferta); qr.make(fit=True); img = qr.make_image(fill='black', back_color='white'); buffer = io.BytesIO(); img.save(buffer, format="PNG"); img_str = base64.b64encode(buffer.getvalue()).decode()
     return render(request, 'imprimir.html', {'oferta': oferta, 'qr_b64': img_str})
+
 def reportar_oferta(request, id):
     oferta = get_object_or_404(OfertaLaboral, id=id)
     if request.method == 'POST':
         form = ReporteForm(request.POST)
         if form.is_valid(): reporte = form.save(commit=False); reporte.oferta = oferta; reporte.save(); messages.warning(request, "Reporte recibido.")
     return redirect('detalle', id=id)
+
 def mapa_empleos(request):
     ofertas = OfertaLaboral.objects.filter(publicada=True); marcadores = []
+    # Coordenadas aproximadas de las capitales regionales
     COORDENADAS_REGIONES = {'AP': [-18.4783, -70.3126], 'TA': [-20.2133, -70.1503], 'AN': [-23.6509, -70.3975], 'AT': [-27.3668, -70.3323], 'CO': [-29.9533, -71.3436], 'VA': [-33.0472, -71.6127], 'RM': [-33.4489, -70.6693], 'BI': [-36.8201, -73.0444], 'AR': [-38.7359, -72.5904], 'LS': [-41.4689, -72.9411], 'AI': [-45.5712, -72.0685], 'MA': [-53.1638, -70.9171], 'NB': [-36.6063, -72.1023], 'LR': [-39.8142, -73.2459]}
+    
     for oferta in ofertas:
         coords = COORDENADAS_REGIONES.get(oferta.region)
-        if coords: marcadores.append({'lat': coords[0] + random.uniform(-0.02, 0.02), 'lng': coords[1] + random.uniform(-0.02, 0.02), 'titulo': oferta.titulo, 'empresa': oferta.empresa, 'url': f"/oferta/{oferta.id}/", 'tipo': oferta.get_tipo_display()})
+        if coords: 
+            # Pequeña variación aleatoria para que no se superpongan si están en la misma ciudad
+            marcadores.append({
+                'lat': coords[0] + random.uniform(-0.02, 0.02), 
+                'lng': coords[1] + random.uniform(-0.02, 0.02), 
+                'titulo': oferta.titulo, 
+                'empresa': oferta.empresa, 
+                'url': f"/oferta/{oferta.id}/", 
+                'tipo': oferta.get_tipo_display()
+            })
     return render(request, 'mapa.html', {'marcadores_json': json.dumps(marcadores)})
