@@ -177,11 +177,13 @@ def detalle_oferta(request, id):
 
 # --- EMPRESA ---
 
-@login_required # RECOMENDADO: Obligar login para publicar
+# RECOMENDADO: Obligar login para publicar
 def publicar_empleo(request):
+    # 👇 AGREGAMOS ESTE BLOQUE DE SEGURIDAD MANUAL
     if not request.user.is_authenticated:
-        messages.warning(request, "⚠️ Debes iniciar sesión o registrarte para publicar tu perfil.")
-        return redirect('login') # O 'registro_usuario' si prefieres
+        messages.warning(request, "⚠️ Para publicar una oferta, primero debes iniciar sesión como empresa.")
+        # Redirigimos al admin login porque es el único que sabemos que existe por ahora
+        return redirect('/admin/login/?next=/publicar/')
     if request.method == 'POST':
         form = NuevaOfertaForm(request.POST, request.FILES)
         if form.is_valid():

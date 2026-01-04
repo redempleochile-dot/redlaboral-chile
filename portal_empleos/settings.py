@@ -158,3 +158,7 @@ if CLOUDINARY_URL:
         )
     except Exception as e:
         print(f"Error configurando Cloudinary: {e}")
+        # Si Django necesita redirigir al login y no sabe dónde, usa esto:
+LOGIN_URL = '/admin/login/'
+LOGIN_REDIRECT_URL = '/'  # Al entrar, mandar a la portada
+LOGOUT_REDIRECT_URL = '/' # Al salir, mandar a la portada
