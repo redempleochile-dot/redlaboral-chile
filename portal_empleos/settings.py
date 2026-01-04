@@ -126,19 +126,19 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # =========================================================
-# 📧 CONFIGURACIÓN DE CORREO
+# 📧 CONFIGURACIÓN DE CORREO (VUELTA AL PUERTO 587 - TLS)
 # =========================================================
+
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = True
 
-# 👇 AQUÍ ESTÁ LA CORRECCIÓN CLAVE
-# Pedimos la variable por su ETIQUETA ("EMAIL_HOST_USER"), no por su contenido.
+# 👇 CAMBIO CLAVE: Usamos puerto 587 y TLS (La puerta estándar)
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True    # <--- Prendemos TLS
+EMAIL_USE_SSL = False   # <--- Apagamos SSL
+
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # =========================================================
