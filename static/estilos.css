@@ -1,0 +1,30 @@
+/* estilos.css - Identidad Visual Busca Pega Chile */
+
+/* Color Principal: Verde Petróleo (Reemplaza el azul aburrido) */
+.bg-primary, .btn-primary {
+    background-color: #005f73 !important;
+    border-color: #005f73 !important;
+}
+
+/* Color de Acento: Naranja (Para botones de acción como "Postular") */
+.btn-success, .btn-accent {
+    background-color: #ca6702 !important;
+    border-color: #ca6702 !important;
+}
+
+/* Títulos con personalidad */
+h1, h2, h3, .navbar-brand {
+    color: #005f73;
+    font-weight: bold;
+}
+
+/* Fondo suave */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Footer oscuro */
+footer {
+    background-color: #0a2540 !important;
+    color: white;
+}

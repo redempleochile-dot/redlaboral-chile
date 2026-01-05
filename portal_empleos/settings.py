@@ -15,7 +15,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarr
 # DEBUG INTELIGENTE:
 # Si existe la variable 'RAILWAY_ENVIRONMENT' (Producción), DEBUG será False (Seguro).
 # Si NO existe (Tu PC), DEBUG será True (Para ver errores).
-DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
+DEBUG = True
 
 # HOSTS PERMITIDOS
 ALLOWED_HOSTS = ['*', 'buscapegachile.cl', 'www.buscapegachile.cl']
