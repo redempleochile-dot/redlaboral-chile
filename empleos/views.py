@@ -169,21 +169,27 @@ def publicar_empleo(request):
         if form.is_valid():
             oferta = form.save(commit=False)
             oferta.usuario = request.user
+            
+            # --- MODO GRATIS ACTIVADO ---
+            oferta.pagada = True       # Marcamos como pagada
+            oferta.publicada = True    # Visible inmediatamente
+            # --------------------------
+
             oferta.save()
             
-            # USO DEL HILO PARA ALERTAS (Evita congelamiento)
+            # USO DEL HILO PARA ALERTAS
             try:
                 palabras = oferta.titulo.split() if oferta.titulo else []
                 query = Q(region=oferta.region) & (Q(palabra_clave__icontains=oferta.titulo) | Q(palabra_clave__in=palabras))
                 alertas_coincidentes = AlertaEmpleo.objects.filter(query)
                 destinatarios = list(set([alerta.email for alerta in alertas_coincidentes]))
                 if destinatarios: 
-                    mensaje = f"Nueva oferta: {oferta.titulo}. Postula aquí: https://www.redlaboral.cl/oferta/{oferta.id}/"
-                    # Disparamos el hilo en segundo plano
+                    mensaje = f"Nueva oferta: {oferta.titulo}. Postula aquí: https://www.buscapegachile.cl/oferta/{oferta.id}/"
                     EmailThread(f"🔔 Alerta: {oferta.titulo}", mensaje, destinatarios).start()
             except Exception as e: 
                 print(f"Error alertas: {e}")
 
+            # Redirigir directo a éxito (saltando pago)
             return redirect('pagina_exito') 
     else: 
         form = NuevaOfertaForm()
@@ -304,9 +310,12 @@ def gestion_candidatos(request, id_oferta):
 @login_required
 def exportar_candidatos_csv(request, id_oferta):
     oferta = get_object_or_404(OfertaLaboral, id=id_oferta, usuario=request.user)
-    try:
-        if not request.user.perfil_empresa.es_premium: messages.error(request, "Exclusivo Premium."); return redirect('planes')
-    except: return redirect('home')
+    
+    # --- MODO GRATIS: SOLO VERIFICAMOS QUE SEA EMPRESA (Sin validar Premium) ---
+    if not hasattr(request.user, 'perfil_empresa'):
+        messages.error(request, "Acción exclusiva para empresas registradas.")
+        return redirect('home')
+    # --------------------------------------------------------------------------
     
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="Postulantes_{oferta.id}.csv"'
@@ -327,11 +336,19 @@ def lista_candidatos(request):
 def detalle_candidato(request, id):
     candidato = get_object_or_404(Candidato, id=id)
     if not candidato.publicado: messages.error(request, "Perfil no disponible."); return redirect('candidatos')
+    
+    # --- MODO GRATIS: TODOS PUEDEN VER CONTACTO ---
     puede_ver_contacto = False
     if request.user.is_authenticated:
-        if hasattr(request.user, 'candidato') and request.user.candidato.id == candidato.id: puede_ver_contacto = True
-        elif hasattr(request.user, 'perfil_empresa') and request.user.perfil_empresa.es_premium: puede_ver_contacto = True
-        elif request.user.is_staff: puede_ver_contacto = True
+        # Si es el dueño, si es empresa o si es admin
+        if hasattr(request.user, 'candidato') and request.user.candidato.id == candidato.id: 
+            puede_ver_contacto = True
+        elif hasattr(request.user, 'perfil_empresa'): # Basta con ser empresa
+            puede_ver_contacto = True
+        elif request.user.is_staff: 
+            puede_ver_contacto = True
+    # ----------------------------------------------
+
     return render(request, 'detalle_candidato.html', {'candidato': candidato, 'puede_ver_contacto': puede_ver_contacto})
 
 def descargar_cv_pdf(request, id):
@@ -386,35 +403,26 @@ def marcar_leidas(request):
     Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
-# --- USUARIOS Y AUTENTICACIÓN (CORREGIDO Y OPTIMIZADO) ---
+# --- USUARIOS Y AUTENTICACIÓN ---
 
 def registro_usuario(request):
-    # 1. Si el usuario envía el formulario (POST)
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             
-            # --- CORRECCIÓN CRÍTICA 502: USO DE THREADING ---
-            # Lanzamos el correo en segundo plano para no congelar la página
-            mensaje = f"Hola {user.first_name},\n\nBienvenido a EmpleosChile. Tu cuenta ha sido creada exitosamente."
-            EmailThread(
-                "¡Bienvenido a la comunidad!", 
-                mensaje, 
-                [user.email]
-            ).start() # .start() inicia el proceso paralelo y sigue adelante
+            # Notificación de bienvenida
+            mensaje = f"Hola {user.first_name},\n\nBienvenido a Busca Pega Chile. Tu cuenta ha sido creada exitosamente."
+            EmailThread("¡Bienvenido a la comunidad!", mensaje, [user.email]).start()
             
             messages.success(request, f'¡Cuenta creada exitosamente! Bienvenido, {user.first_name}.')
             return redirect('home')
         else:
             messages.error(request, "Por favor corrige los errores del formulario.")
-    
-    # 2. Si el usuario entra a la página (GET)
     else:
         form = RegistroForm()
         
-    # El render SIEMPRE debe estar aquí (fuera del else) para evitar ValueError
     return render(request, 'registration/registro.html', {'form': form})
 
 def logout_usuario(request): 
@@ -442,7 +450,7 @@ def panel_admin(request):
     context = {'kpi_ofertas': total_ofertas, 'kpi_candidatos': total_candidatos, 'kpi_usuarios': total_usuarios, 'labels_reg': json.dumps(labels_reg), 'data_reg': json.dumps(data_reg), 'data_pie': json.dumps([publicadas, pendientes])}
     return render(request, 'panel_admin.html', context)
 
-# --- EXTRAS (MAPAS, BLOG, LEGALES) ---
+# --- EXTRAS ---
 
 def crear_alerta(request):
     if request.method == 'POST': email = request.POST.get('email'); clave = request.POST.get('palabra_clave'); region = request.POST.get('region'); AlertaEmpleo.objects.create(email=email, palabra_clave=clave, region=region); messages.success(request, f"¡Alerta creada!")
@@ -453,6 +461,7 @@ def pagina_planes(request): return render(request, 'planes.html')
 
 @login_required
 def pago_simulado(request, plan):
+    # NOTA: Aunque el sitio es gratis, dejamos esta vista por si en el futuro se reactiva
     precio = "0"; nombre_plan = ""
     if plan == 'pro': precio = "29.990"; nombre_plan = "Plan Reclutador PRO"
     elif plan == 'corp': precio = "59.990"; nombre_plan = "Plan Corporativo"
@@ -495,7 +504,6 @@ def reportar_oferta(request, id):
 
 def mapa_empleos(request):
     ofertas = OfertaLaboral.objects.filter(publicada=True); marcadores = []
-    # Coordenadas aproximadas de las capitales regionales
     COORDENADAS_REGIONES = {'AP': [-18.4783, -70.3126], 'TA': [-20.2133, -70.1503], 'AN': [-23.6509, -70.3975], 'AT': [-27.3668, -70.3323], 'CO': [-29.9533, -71.3436], 'VA': [-33.0472, -71.6127], 'RM': [-33.4489, -70.6693], 'BI': [-36.8201, -73.0444], 'AR': [-38.7359, -72.5904], 'LS': [-41.4689, -72.9411], 'AI': [-45.5712, -72.0685], 'MA': [-53.1638, -70.9171], 'NB': [-36.6063, -72.1023], 'LR': [-39.8142, -73.2459]}
     
     for oferta in ofertas:
@@ -511,16 +519,16 @@ def mapa_empleos(request):
             })
     return render(request, 'mapa.html', {'marcadores_json': json.dumps(marcadores)})
 
-# --- DEBUG DE CORREO (Borrar después de probar) ---
+# --- DEBUG DE CORREO (Puedes borrarlo después) ---
 def prueba_email(request):
     try:
         send_mail(
             'Prueba de Fuego 🔥',
             'Si lees esto, ¡la configuración de correo funciona perfectamente!',
             settings.EMAIL_HOST_USER,
-            ['millapeld@gmail.com'], # <--- CAMBIA ESTO POR TU CORREO REAL PARA PROBAR
+            ['millapeld@gmail.com'], # Tu correo personal
             fail_silently=False,
         )
-        return HttpResponse("✅ ¡ÉXITO! El correo fue enviado. Revisa tu bandeja de entrada (y Spam).")
+        return HttpResponse("✅ ¡ÉXITO! El correo fue enviado.")
     except Exception as e:
         return HttpResponse(f"❌ ERROR DETALLADO: {e}")
