@@ -3,21 +3,34 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from .models import OfertaLaboral, Candidato, Valoracion, Suscriptor, PerfilEmpresa, ReporteOferta, Pregunta
+from django.contrib.auth import get_user_model
+from .models import (
+    OfertaLaboral, Candidato, Valoracion, Suscriptor, 
+    PerfilEmpresa, ReporteOferta, Pregunta
+)
 
+User = get_user_model()
+
+# Lista global de palabras prohibidas para todo el sitio
 PALABRAS_PROHIBIDAS = ['estafa', 'dinero facil', 'sexo', 'xxx', 'idiota', 'tonto', 'basura']
+
 def validar_texto_limpio(texto):
+    """Validador global para evitar lenguaje ofensivo"""
     if texto:
         texto_bajo = texto.lower()
         for palabra in PALABRAS_PROHIBIDAS:
-            if palabra in texto_bajo: raise ValidationError(f"Palabra prohibida: '{palabra}'")
+            if palabra in texto_bajo: 
+                raise ValidationError(f"Palabra prohibida detectada: '{palabra}'")
+
+# --- FORMULARIOS SIMPLES ---
 
 class PreguntaForm(forms.ModelForm):
     class Meta:
         model = Pregunta
         fields = ['pregunta']
-        widgets = {'pregunta': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Haz una pregunta profesional al reclutador...'})}
+        widgets = {
+            'pregunta': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Haz una pregunta profesional al reclutador...'})
+        }
 
 class ContactoForm(forms.Form):
     nombre = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -26,10 +39,19 @@ class ContactoForm(forms.Form):
     mensaje = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}))
 
 class SuscriptorForm(forms.ModelForm):
-    class Meta: model = Suscriptor; fields = ['email']; widgets = {'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Tu correo...'})}
+    class Meta: 
+        model = Suscriptor
+        fields = ['email']
+        widgets = {'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Tu correo...'})}
 
 class ValoracionForm(forms.ModelForm):
-    class Meta: model = Valoracion; fields = ['estrellas', 'comentario']; widgets = {'estrellas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}), 'comentario': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})}
+    class Meta: 
+        model = Valoracion
+        fields = ['estrellas', 'comentario']
+        widgets = {
+            'estrellas': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}), 
+            'comentario': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
+        }
 
 class PerfilEmpresaForm(forms.ModelForm):
     class Meta:
@@ -42,14 +64,22 @@ class PerfilEmpresaForm(forms.ModelForm):
             'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'banner': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields: self.fields[field].required = False
+        for field in self.fields: 
+            self.fields[field].required = False
 
 class ReporteForm(forms.ModelForm):
     class Meta:
-        model = ReporteOferta; fields = ['motivo', 'detalle']
-        widgets = {'motivo': forms.Select(attrs={'class': 'form-select'}), 'detalle': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})}
+        model = ReporteOferta
+        fields = ['motivo', 'detalle']
+        widgets = {
+            'motivo': forms.Select(attrs={'class': 'form-select'}), 
+            'detalle': forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
+        }
+
+# --- FORMULARIOS PRINCIPALES ---
 
 class NuevaOfertaForm(forms.ModelForm):
     aceptar_terminos = forms.BooleanField(required=False)
@@ -58,8 +88,11 @@ class NuevaOfertaForm(forms.ModelForm):
     
     class Meta:
         model = OfertaLaboral
-        # AQUÍ ESTÁ EL CAMPO WSP_ACTIVO QUE DABA ERROR
-        fields = ['titulo', 'empresa', 'tipo', 'duracion', 'modalidad', 'region', 'experiencia', 'sueldo', 'fecha_cierre', 'telefono', 'wsp_activo', 'email_contacto', 'etiquetas', 'descripcion', 'imagen']
+        fields = [
+            'titulo', 'empresa', 'tipo', 'duracion', 'modalidad', 'region', 
+            'experiencia', 'sueldo', 'fecha_cierre', 'telefono', 'wsp_activo', 
+            'email_contacto', 'etiquetas', 'descripcion', 'imagen'
+        ]
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Vendedor'}),
             'empresa': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Opcional'}),
@@ -79,8 +112,10 @@ class NuevaOfertaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields: self.fields[field].required = False
-        if not self.instance.pk: self.fields['fecha_cierre'].initial = (timezone.now() + timedelta(days=30)).date()
+        for field in self.fields: 
+            self.fields[field].required = False
+        if not self.instance.pk: 
+            self.fields['fecha_cierre'].initial = (timezone.now() + timedelta(days=30)).date()
 
     def clean_telefono(self):
         tel = self.cleaned_data.get('telefono')
@@ -91,13 +126,13 @@ class NuevaOfertaForm(forms.ModelForm):
 
     def clean_imagen(self):
         img = self.cleaned_data.get('imagen')
-        if img and img.size > 2*1024*1024: raise ValidationError("Máx 2MB")
+        if img and img.size > 2*1024*1024: raise ValidationError("La imagen no debe pesar más de 2MB")
         return img
 
     def clean_captcha(self):
         val = self.cleaned_data.get('captcha')
         if val is None: return 7 
-        if val != 7: raise forms.ValidationError("Error robot")
+        if val != 7: raise forms.ValidationError("Error matemático en la verificación.")
         return 7
 
 class NuevoCandidatoForm(forms.ModelForm):
@@ -106,8 +141,11 @@ class NuevoCandidatoForm(forms.ModelForm):
     
     class Meta:
         model = Candidato
-        # AQUÍ ESTÁ EL CAMPO VIDEO QUE DABA ERROR
-        fields = ['nombre', 'titular', 'rubro', 'foto', 'video', 'region', 'experiencia', 'pretension_renta', 'disponibilidad', 'telefono', 'email', 'linkedin', 'cv', 'presentacion']
+        fields = [
+            'nombre', 'titular', 'rubro', 'foto', 'video', 'region', 
+            'experiencia', 'pretension_renta', 'disponibilidad', 'telefono', 
+            'email', 'linkedin', 'cv', 'presentacion'
+        ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'titular': forms.TextInput(attrs={'class': 'form-control'}),
@@ -127,18 +165,21 @@ class NuevoCandidatoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields: self.fields[field].required = False
+        for field in self.fields: 
+            self.fields[field].required = False
 
     def clean_telefono(self):
         tel = self.cleaned_data.get('telefono')
         if not tel: return None
         return tel
 
+# --- REGISTRO DE USUARIOS (CON SEGURIDAD MEJORADA) ---
+
 class RegistroForm(UserCreationForm):
     email = forms.EmailField(required=True, label="Correo Electrónico", widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@correo.cl'}))
     first_name = forms.CharField(required=True, label="Nombre", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Juan'}))
     last_name = forms.CharField(required=True, label="Apellido", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pérez'}))
-    captcha = forms.IntegerField(required=True, label="Seguridad: ¿Cuánto es 5 + 5?", widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Respuesta numéríca'}))
+    captcha = forms.IntegerField(required=True, label="Seguridad: ¿Cuánto es 5 + 5?", widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Respuesta numérica'}))
     aceptar_legales = forms.BooleanField(required=True, label="Acepto los Términos y Política de Privacidad bajo la legislación chilena.")
 
     class Meta:
@@ -147,12 +188,39 @@ class RegistroForm(UserCreationForm):
         widgets = {'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de usuario único'})}
         help_texts = {'username': None}
 
+    # 🔥 SEGURIDAD ANTI-TROLL: BLOQUEO DE DOMINIOS BASURA
     def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists(): raise forms.ValidationError("Este correo ya está registrado.")
+        email = self.cleaned_data.get('email').lower()
+        
+        # Lista negra de dominios temporales
+        dominios_basura = [
+            'icousd.com', 'tempmail.com', '10minutemail.com', 
+            'guerrillamail.com', 'yopmail.com', 'sharklasers.com',
+            'mailinator.com', 'trashmail.com'
+        ]
+        
+        domain = email.split('@')[-1]
+        if domain in dominios_basura:
+            raise forms.ValidationError("Por favor usa un correo real (Gmail, Outlook, Yahoo, empresa, etc). No aceptamos correos temporales.")
+        
+        if User.objects.filter(email=email).exists(): 
+            raise forms.ValidationError("Este correo ya está registrado.")
+            
         return email
+
+    # 🔥 SEGURIDAD ANTI-TROLL: BLOQUEO DE NOMBRES FALSOS
+    def clean_first_name(self):
+        nombre = self.cleaned_data.get('first_name')
+        palabras_ofensivas = ['tumama', 'tu mama', 'nadie', 'tonto', 'admin', 'root', 'yonosoy']
+        
+        for palabra in palabras_ofensivas:
+            if palabra in nombre.lower().replace(" ", ""):
+                raise forms.ValidationError("Por favor ingresa un nombre válido.")
+        
+        return nombre
 
     def clean_captcha(self):
         val = self.cleaned_data.get('captcha')
-        if val != 10: raise forms.ValidationError("Error matemático. ¿Eres un robot?")
+        if val != 10: 
+            raise forms.ValidationError("Error matemático. ¿Eres un robot?")
         return val
