@@ -6,20 +6,21 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =========================================================
-# 🔐 SEGURIDAD Y DOMINIOS (¡NUEVO!)
+# 🔐 SEGURIDAD Y ENTORNO
 # =========================================================
 
-# CLAVE SECRETA (La toma de Railway o usa una por defecto local)
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo')
+# CLAVE SECRETA: La toma de Railway. Si no existe (local), usa una temporal.
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo-local')
 
-# DEBUG: 'True' para ver errores detallados. En producción idealmente es 'False'.
-# Lo dejamos True por ahora para que puedas ver si algo falla al lanzar.
-DEBUG = DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
+# DEBUG INTELIGENTE:
+# Si existe la variable 'RAILWAY_ENVIRONMENT' (Producción), DEBUG será False (Seguro).
+# Si NO existe (Tu PC), DEBUG será True (Para ver errores).
+DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
 
-# 🌍 HOSTS PERMITIDOS (Quién puede visitar tu web)
+# HOSTS PERMITIDOS
 ALLOWED_HOSTS = ['*', 'buscapegachile.cl', 'www.buscapegachile.cl']
 
-# 🛡️ ORÍGENES DE CONFIANZA (Vital para que funcionen los formularios con tu dominio)
+# ORÍGENES DE CONFIANZA (Vital para formularios en Producción)
 CSRF_TRUSTED_ORIGINS = [
     'https://buscapegachile.cl',
     'https://www.buscapegachile.cl',
@@ -37,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.humanize',
+    'django.contrib.humanize',  # <--- Formato de dinero y fechas
     
     # Mis Apps
     'empleos',
@@ -45,12 +46,12 @@ INSTALLED_APPS = [
     # Librerías de Terceros
     'crispy_forms',
     'crispy_bootstrap5',
-    # 'anymail', # <--- Descomenta esto cuando instales Resend
+    'anymail',  # <--- Conector para enviar correos con Resend
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware", # Motor de archivos estáticos
+    "whitenoise.middleware.WhiteNoiseMiddleware", # <--- Motor de archivos estáticos
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -64,7 +65,7 @@ ROOT_URLCONF = 'portal_empleos.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Carpeta de plantillas
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -91,36 +92,31 @@ DATABASES = {
 }
 
 # =========================================================
-# 📧 CONFIGURACIÓN DE CORREO (ACTUAL: MODO CONSOLA)
+# 📧 CONFIGURACIÓN DE CORREO (RESEND 🚀)
 # =========================================================
 
-# OPCIÓN ACTIVA: Muestra los correos en los LOGS de Railway (No fallan nunca)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
 
-# --- FUTURO: CONFIGURACIÓN RESEND (Cuando instales la librería) ---
-# Para activar esto:
-# 1. Agrega 'django-anymail[resend]' a requirements.txt
-# 2. Descomenta las líneas de abajo y comenta la de arriba (ConsoleBackend)
+ANYMAIL = {
+    "RESEND_API_KEY": os.environ.get("RESEND_API_KEY"),
+}
 
-# EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
-# ANYMAIL = {
-#     "RESEND_API_KEY": os.environ.get("RESEND_API_KEY"),
-# }
-# DEFAULT_FROM_EMAIL = "contacto@buscapegachile.cl"
-# SERVER_EMAIL = "contacto@buscapegachile.cl"
+# Identidad del correo (Esto aparecerá en el buzón del usuario)
+DEFAULT_FROM_EMAIL = "Equipo Busca Pega <noreply@buscapegachile.cl>"
+SERVER_EMAIL = "noreply@buscapegachile.cl"
 
 # =========================================================
-# 🎨 ARCHIVOS ESTÁTICOS (CSS, JS, IMÁGENES)
+# 🎨 ARCHIVOS ESTÁTICOS Y MEDIA
 # =========================================================
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Motor de almacenamiento eficiente para Railway
+# Almacenamiento optimizado para producción
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Configuración de Archivos Multimedia (Subida de CVs y Logos)
+# Archivos subidos por usuarios (CVs, Logos)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -134,12 +130,12 @@ TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_TZ = True
 
-# Login
+# Redirecciones de Login
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
-# Crispy Forms (Para que los formularios se vean bonitos)
+# Crispy Forms (Diseño Bootstrap 5)
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
