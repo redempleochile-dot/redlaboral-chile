@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.humanize',  # <--- Formato de dinero y fechas
+    'django.contrib.humanize',
+    'django.contrib.sites',
     
     # Mis Apps
     'empleos',
@@ -141,3 +142,10 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Clave primaria por defecto
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# =========================================================
+# ⚙️ OTRAS CONFIGURACIONES
+# =========================================================
+# ... (otras configuraciones) ...
+
+# Indica que este es el sitio principal (vital para resetear password)
+SITE_ID = 1
