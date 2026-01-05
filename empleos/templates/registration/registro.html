@@ -5,6 +5,8 @@
     <title>Crear Cuenta | EmpleosChile</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇨🇱</text></svg>">
+    
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body class="bg-light d-flex align-items-center justify-content-center py-5">
     
@@ -33,7 +35,13 @@
                         </div>
                     {% endfor %}
 
-                    <div class="d-grid mt-4">
+                    <div class="my-4 text-center">
+                        <div class="cf-turnstile d-inline-block" 
+                             data-sitekey="0x4AAAAAACKuVoKbwXuLb2SP" 
+                             data-theme="light">
+                        </div>
+                    </div>
+                    <div class="d-grid mt-2">
                         <button type="submit" class="btn btn-primary btn-lg fw-bold rounded-pill">Crear Cuenta Segura</button>
                     </div>
                 </form>
@@ -45,7 +53,7 @@
         
         <p class="text-center text-muted mt-4 small" style="font-size: 0.75rem;">
             Tus datos están protegidos bajo la Ley 19.628.<br>
-            EmpleosChile SpA © 2025
+            EmpleosChile SpA © 2026
         </p>
     </div>
 

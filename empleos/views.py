@@ -8,6 +8,7 @@ import time
 import csv
 import threading
 import os
+import requests  # <--- ✅ NUEVO: Necesario para hablar con Cloudflare
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -311,11 +312,10 @@ def gestion_candidatos(request, id_oferta):
 def exportar_candidatos_csv(request, id_oferta):
     oferta = get_object_or_404(OfertaLaboral, id=id_oferta, usuario=request.user)
     
-    # --- MODO GRATIS: SOLO VERIFICAMOS QUE SEA EMPRESA (Sin validar Premium) ---
+    # --- MODO GRATIS: SOLO VERIFICAMOS QUE SEA EMPRESA ---
     if not hasattr(request.user, 'perfil_empresa'):
         messages.error(request, "Acción exclusiva para empresas registradas.")
         return redirect('home')
-    # --------------------------------------------------------------------------
     
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="Postulantes_{oferta.id}.csv"'
@@ -340,10 +340,9 @@ def detalle_candidato(request, id):
     # --- MODO GRATIS: TODOS PUEDEN VER CONTACTO ---
     puede_ver_contacto = False
     if request.user.is_authenticated:
-        # Si es el dueño, si es empresa o si es admin
         if hasattr(request.user, 'candidato') and request.user.candidato.id == candidato.id: 
             puede_ver_contacto = True
-        elif hasattr(request.user, 'perfil_empresa'): # Basta con ser empresa
+        elif hasattr(request.user, 'perfil_empresa'): 
             puede_ver_contacto = True
         elif request.user.is_staff: 
             puede_ver_contacto = True
@@ -403,11 +402,44 @@ def marcar_leidas(request):
     Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
-# --- USUARIOS Y AUTENTICACIÓN ---
+# --- USUARIOS Y AUTENTICACIÓN (BLINDADO CON CLOUDFLARE) ---
 
 def registro_usuario(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
+        
+        # --- 🛡️ INICIO BLOQUE CLOUDFLARE TURNSTILE ---
+        turnstile_token = request.POST.get('cf-turnstile-response')
+        
+        # ⬇️⬇️ ⚠️ PEGA TU SECRET KEY (CLAVE PRIVADA) AQUÍ ⬇️⬇️
+        SECRET_KEY_CLOUDFLARE = "0x4AAAAAACKuVgshdJoeBm5ANHQWv_SkzeQ" 
+        
+        # Validación: Si no hay token, el bot intentó saltarse el script
+        if not turnstile_token:
+             messages.error(request, "⚠️ Error de seguridad: Por favor completa la verificación 'No soy un robot'.")
+             return render(request, 'registration/registro.html', {'form': form})
+
+        # Preguntamos a Cloudflare si el token es válido
+        try:
+            verificacion = requests.post(
+                'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+                data={
+                    'secret': SECRET_KEY_CLOUDFLARE,
+                    'response': turnstile_token,
+                    'remoteip': request.META.get('REMOTE_ADDR')
+                }
+            ).json()
+
+            # Si Cloudflare dice "false", es un bot o falló la prueba
+            if not verificacion.get('success'):
+                messages.error(request, "🤖 Detectamos comportamiento automatizado. Intenta de nuevo.")
+                return render(request, 'registration/registro.html', {'form': form})
+                
+        except Exception as e:
+            # Si falla la conexión con Cloudflare (raro), lo dejamos pasar
+            print(f"Error conectando con Cloudflare: {e}")
+        # --- 🛡️ FIN BLOQUE CLOUDFLARE ---
+
         if form.is_valid():
             user = form.save()
             login(request, user)
@@ -519,14 +551,14 @@ def mapa_empleos(request):
             })
     return render(request, 'mapa.html', {'marcadores_json': json.dumps(marcadores)})
 
-# --- DEBUG DE CORREO (Puedes borrarlo después) ---
+# --- DEBUG DE CORREO ---
 def prueba_email(request):
     try:
         send_mail(
             'Prueba de Fuego 🔥',
             'Si lees esto, ¡la configuración de correo funciona perfectamente!',
             settings.EMAIL_HOST_USER,
-            ['millapeld@gmail.com'], # Tu correo personal
+            ['millapeld@gmail.com'], 
             fail_silently=False,
         )
         return HttpResponse("✅ ¡ÉXITO! El correo fue enviado.")
