@@ -9,18 +9,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # 🔐 SEGURIDAD Y ENTORNO
 # =========================================================
 
-# CLAVE SECRETA: La toma de Railway. Si no existe (local), usa una temporal.
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-clave-temporal-desarrollo-local')
 
-# DEBUG INTELIGENTE:
-# Si existe la variable 'RAILWAY_ENVIRONMENT' (Producción), DEBUG será False (Seguro).
-# Si NO existe (Tu PC), DEBUG será True (Para ver errores).
-DEBUG = True
+# DEBUG INTELIGENTE: False en Railway (Producción), True en tu PC.
+DEBUG = 'RAILWAY_ENVIRONMENT' not in os.environ
 
-# HOSTS PERMITIDOS
 ALLOWED_HOSTS = ['*', 'buscapegachile.cl', 'www.buscapegachile.cl']
 
-# ORÍGENES DE CONFIANZA (Vital para formularios en Producción)
 CSRF_TRUSTED_ORIGINS = [
     'https://buscapegachile.cl',
     'https://www.buscapegachile.cl',
@@ -32,14 +27,19 @@ CSRF_TRUSTED_ORIGINS = [
 # =========================================================
 
 INSTALLED_APPS = [
+    # 👑 Jazzmin debe ir ANTES de 'django.contrib.admin'
+    'jazzmin',
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.humanize',
-    'django.contrib.sites',
+    
+    # Utilidades Django
+    'django.contrib.humanize',  # Formato de dinero y fechas
+    'django.contrib.sites',     # Necesario para "Olvidé mi contraseña"
     
     # Mis Apps
     'empleos',
@@ -47,12 +47,15 @@ INSTALLED_APPS = [
     # Librerías de Terceros
     'crispy_forms',
     'crispy_bootstrap5',
-    'anymail',  # <--- Conector para enviar correos con Resend
+    'anymail',  # Envío de correos
 ]
+
+# ID del sitio (Vital para que funcionen los enlaces de correos)
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware", # <--- Motor de archivos estáticos
+    "whitenoise.middleware.WhiteNoiseMiddleware", # Motor de archivos estáticos
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -82,7 +85,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'portal_empleos.wsgi.application'
 
 # =========================================================
-# 🗄️ BASE DE DATOS (PostgreSQL en Railway)
+# 🗄️ BASE DE DATOS (PostgreSQL)
 # =========================================================
 
 DATABASES = {
@@ -93,7 +96,39 @@ DATABASES = {
 }
 
 # =========================================================
-# 📧 CONFIGURACIÓN DE CORREO (RESEND 🚀)
+# 👑 CONFIGURACIÓN DE JAZZMIN (El nuevo Dashboard)
+# =========================================================
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Admin Busca Pega",
+    "site_header": "Busca Pega Chile",
+    "site_brand": "Busca Pega Chile",
+    "welcome_sign": "Bienvenido al Panel de Control",
+    "copyright": "Busca Pega Chile SpA",
+    "search_model": "auth.User",
+    
+    # Menú lateral
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    
+    # Iconos para tus modelos (Opcional, se ve bonito)
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "empleos.Oferta": "fas fa-briefcase", # Ajusta si tu modelo se llama distinto
+        "empleos.Empresa": "fas fa-building",
+    },
+}
+
+# Tema visual del admin (Puedes probar otros como 'flatly', 'darkly', etc.)
+JAZZMIN_UI_TWEAKS = {
+    "theme": "flatly", 
+    "dark_mode_theme": "darkly",
+}
+
+# =========================================================
+# 📧 CORREO (Resend)
 # =========================================================
 
 EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
@@ -102,7 +137,6 @@ ANYMAIL = {
     "RESEND_API_KEY": os.environ.get("RESEND_API_KEY"),
 }
 
-# Identidad del correo (Esto aparecerá en el buzón del usuario)
 DEFAULT_FROM_EMAIL = "Equipo Busca Pega <noreply@buscapegachile.cl>"
 SERVER_EMAIL = "noreply@buscapegachile.cl"
 
@@ -113,11 +147,8 @@ SERVER_EMAIL = "noreply@buscapegachile.cl"
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Almacenamiento optimizado para producción
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Archivos subidos por usuarios (CVs, Logos)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -125,27 +156,16 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # ⚙️ OTRAS CONFIGURACIONES
 # =========================================================
 
-# Idioma y Zona Horaria
 LANGUAGE_CODE = 'es-cl'
 TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_TZ = True
 
-# Redirecciones de Login
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
-# Crispy Forms (Diseño Bootstrap 5)
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
-# Clave primaria por defecto
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-# =========================================================
-# ⚙️ OTRAS CONFIGURACIONES
-# =========================================================
-# ... (otras configuraciones) ...
-
-# Indica que este es el sitio principal (vital para resetear password)
-SITE_ID = 1
