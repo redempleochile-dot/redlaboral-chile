@@ -6,40 +6,35 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 
-# --- FUNCIONES AUXILIARES (NO BORRAR - Requeridas por migraciones antiguas) ---
+# --- FUNCIONES AUXILIARES (NO BORRAR - Requeridas por historial de migraciones) ---
 
 def renombrar_foto(instance, filename):
-    """Genera un nombre único para las fotos de perfil"""
     ext = filename.split('.')[-1]
     filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join('fotos_candidatos/', filename)
 
 def renombrar_logo(instance, filename):
-    """Genera un nombre único para los logos de empresas"""
     ext = filename.split('.')[-1]
     filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join('logos_empresas/', filename)
 
 def renombrar_banner(instance, filename):
-    """Genera un nombre único para los banners de empresas"""
     ext = filename.split('.')[-1]
     filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join('banners_empresas/', filename)
 
 def renombrar_archivo(instance, filename):
-    """Genera un nombre único para archivos generales (CVs, imágenes de ofertas)"""
     ext = filename.split('.')[-1]
     filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join('uploads/', filename)
 
 def validar_video(value):
-    """Valida que el video no pese más de 50MB"""
     filesize = value.size
     limit = 50 * 1024 * 1024 # 50MB
     if filesize > limit:
         raise ValidationError("El tamaño máximo del archivo es de 50MB.")
 
-# --- OPCIONES PARA LOS SELECTORES ---
+# --- OPCIONES GLOBALES ---
 REGIONES_CHILE = [
     ('AP', 'Arica y Parinacota'), ('TA', 'Tarapacá'), ('AN', 'Antofagasta'), 
     ('AT', 'Atacama'), ('CO', 'Coquimbo'), ('VA', 'Valparaíso'), 
@@ -109,10 +104,7 @@ class OfertaLaboral(models.Model):
     email_contacto = models.EmailField(blank=True, null=True)
     etiquetas = models.CharField(max_length=200, blank=True, null=True, help_text="Ej: Python, Ventas, Licencia B")
     descripcion = models.TextField()
-    
-    # Usamos renombrar_archivo aquí por si alguna migración antigua lo pide
     imagen = models.ImageField(upload_to=renombrar_archivo, blank=True, null=True)
-    
     publicada = models.BooleanField(default=False)
     pagada = models.BooleanField(default=False)
     es_destacado = models.BooleanField(default=False)
@@ -134,10 +126,7 @@ class Candidato(models.Model):
     telefono = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     linkedin = models.URLField(blank=True, null=True)
-    
-    # Usamos renombrar_archivo también para el CV, por si acaso
     cv = models.FileField(upload_to=renombrar_archivo, blank=True, null=True)
-    
     presentacion = models.TextField(blank=True, null=True, verbose_name="Breve presentación")
     publicado = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -150,7 +139,6 @@ class Postulacion(models.Model):
     candidato = models.ForeignKey(Candidato, on_delete=models.CASCADE, related_name='postulaciones')
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=3, choices=ESTADOS, default='ENV')
-    
     class Meta: unique_together = ('oferta', 'candidato')
 
 class Valoracion(models.Model):
@@ -162,7 +150,11 @@ class Valoracion(models.Model):
 
 class Noticia(models.Model):
     titulo = models.CharField(max_length=200)
-    bajada = models.TextField()
+    
+    # 🔴 AQUÍ ESTABA EL ERROR 🔴
+    # Le agregamos un default para que no pida confirmación manual
+    bajada = models.TextField(default="Sin resumen disponible", blank=True)
+    
     contenido = models.TextField()
     imagen = models.ImageField(upload_to='blog/')
     fecha_publicacion = models.DateTimeField(default=timezone.now)
@@ -208,22 +200,16 @@ class Favorito(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     class Meta: unique_together = ('usuario', 'oferta')
 
-# --- MODELO DE SERVICIOS / FREELANCE ---
 class Servicio(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='servicios')
     titulo = models.CharField(max_length=200, verbose_name="¿Qué servicio ofreces?")
     descripcion = models.TextField(verbose_name="Detalle del servicio")
     rubro = models.CharField(max_length=50, choices=RUBROS_CHILE)
     region = models.CharField(max_length=50, choices=REGIONES_CHILE)
-    
     telefono = models.CharField(max_length=20, verbose_name="WhatsApp / Teléfono")
     email_contacto = models.EmailField(verbose_name="Correo de contacto")
-    
-    # Usamos renombrar_archivo aquí también para mantener orden
     imagen = models.ImageField(upload_to=renombrar_archivo, blank=True, null=True)
-    
     precio_referencial = models.CharField(max_length=100, blank=True, null=True)
-    
     fecha_publicacion = models.DateTimeField(default=timezone.now)
     publicado = models.BooleanField(default=True)
 
