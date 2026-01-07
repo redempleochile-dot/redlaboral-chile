@@ -11,7 +11,6 @@ from .models import (
 
 User = get_user_model()
 
-# Lista global de palabras prohibidas
 PALABRAS_PROHIBIDAS = ['estafa', 'dinero facil', 'sexo', 'xxx', 'idiota', 'tonto', 'basura']
 
 def validar_texto_limpio(texto):
@@ -218,10 +217,8 @@ class RegistroForm(UserCreationForm):
             raise forms.ValidationError("Error matemático. ¿Eres un robot?")
         return val
 
-# --- NUEVO FORMULARIO PARA SERVICIOS (CON INDENTACIÓN CORREGIDA) ---
-
 class NuevoServicioForm(forms.ModelForm):
-    # ✅ ESTA LÍNEA DEBE TENER SANGRÍA (4 ESPACIOS)
+    # ✅ CORREGIDO: Indentación arreglada
     aceptar_terminos = forms.BooleanField(required=False)
     
     class Meta:

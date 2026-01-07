@@ -82,7 +82,7 @@ class PerfilEmpresa(models.Model):
     es_destacada = models.BooleanField(default=False)
     es_premium = models.BooleanField(default=False)
     
-    # 🔴 CORREGIDO: Usamos default=timezone.now para evitar error de migración
+    # ✅ CORREGIDO: Usamos default=timezone.now para evitar error de migración
     fecha_creacion = models.DateTimeField(default=timezone.now)
 
     def __str__(self): return self.nombre or self.usuario.username
@@ -153,7 +153,7 @@ class Valoracion(models.Model):
 class Noticia(models.Model):
     titulo = models.CharField(max_length=200)
     
-    # 🔴 CORREGIDO: Agregado default para evitar error de migración
+    # ✅ CORREGIDO: Agregado default para evitar error de migración "non-nullable field"
     bajada = models.TextField(default="Sin resumen disponible", blank=True)
     
     contenido = models.TextField()
@@ -165,13 +165,17 @@ class Noticia(models.Model):
 
 class Suscriptor(models.Model):
     email = models.EmailField(unique=True)
-    fecha_suscripcion = models.DateTimeField(auto_now_add=True)
+    
+    # ✅ CORREGIDO: Usamos default=timezone.now
+    fecha_suscripcion = models.DateTimeField(default=timezone.now)
 
 class AlertaEmpleo(models.Model):
     email = models.EmailField()
     palabra_clave = models.CharField(max_length=100)
     region = models.CharField(max_length=50, choices=REGIONES_CHILE)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    # ✅ CORREGIDO: Usamos default=timezone.now
+    fecha_creacion = models.DateTimeField(default=timezone.now)
 
 class ReporteOferta(models.Model):
     MOTIVOS = [('fraude', 'Posible Estafa'), ('discriminacion', 'Discriminación'), ('spam', 'Spam / Publicidad'), ('otro', 'Otro')]
