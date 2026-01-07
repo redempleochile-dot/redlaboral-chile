@@ -8,7 +8,7 @@ import time
 import csv
 import threading
 import os
-import requests  # <--- ✅ NUEVO: Necesario para hablar con Cloudflare
+import requests 
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -26,19 +26,28 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
 
+# --- NUEVAS IMPORTACIONES PARA ACTIVACIÓN DE CUENTA ---
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+
 # IMPORTACIÓN DE MODELOS Y FORMULARIOS
+# ⚠️ ASEGÚRATE DE QUE 'Servicio' ESTÉ EN TUS MODELOS
 from .models import (
     OfertaLaboral, Candidato, Noticia, Valoracion, Suscriptor, 
     AlertaEmpleo, Postulacion, PerfilEmpresa, ReporteOferta, Notificacion, 
-    Pregunta, Favorito,
+    Pregunta, Favorito, Servicio, # <--- AGREGADO: Servicio
     REGIONES_CHILE, NIVEL_EXPERIENCIA, TIPO_TRABAJO, RUBROS_CHILE
 )
+
+# ⚠️ ASEGÚRATE DE QUE 'NuevoServicioForm' ESTÉ EN TUS FORMULARIOS
 from .forms import (
     NuevaOfertaForm, NuevoCandidatoForm, ContactoForm, 
-    ValoracionForm, SuscriptorForm, PerfilEmpresaForm, ReporteForm, PreguntaForm, RegistroForm
+    ValoracionForm, SuscriptorForm, PerfilEmpresaForm, ReporteForm, 
+    PreguntaForm, RegistroForm, NuevoServicioForm # <--- AGREGADO: NuevoServicioForm
 )
 
-# --- UTILIDAD: HILO PARA EMAIL (ANTÍDOTO PARA EL ERROR 502) ---
+# --- UTILIDAD: HILO PARA EMAIL ---
 class EmailThread(threading.Thread):
     def __init__(self, subject, message, recipient_list):
         self.subject = subject
@@ -48,7 +57,6 @@ class EmailThread(threading.Thread):
 
     def run(self):
         try:
-            # Enviamos el correo en segundo plano
             send_mail(
                 self.subject, 
                 self.message, 
@@ -66,10 +74,8 @@ def pagina_exito(request):
     return render(request, 'exito.html')
 
 def pagina_inicio(request):
-    # Obtener ofertas publicadas
     all_ofertas = OfertaLaboral.objects.filter(publicada=True).order_by('-es_destacado', '-fecha_publicacion')
     
-    # Filtros de búsqueda
     q = request.GET.get('q')
     if q: all_ofertas = all_ofertas.filter(Q(titulo__icontains=q) | Q(empresa__icontains=q))
     
@@ -84,14 +90,11 @@ def pagina_inicio(request):
         fecha_limite = timezone.now() - timedelta(days=int(dias))
         all_ofertas = all_ofertas.filter(fecha_publicacion__gte=fecha_limite)
 
-    # Paginación
     paginator = Paginator(all_ofertas, 10)
     page_obj = paginator.get_page(request.GET.get('page'))
     
-    # Empresas destacadas
     empresas = PerfilEmpresa.objects.filter(es_destacada=True).exclude(logo='')
     
-    # Favoritos del usuario
     favoritos_ids = []
     if request.user.is_authenticated:
         favoritos_ids = Favorito.objects.filter(usuario=request.user).values_list('oferta_id', flat=True)
@@ -114,7 +117,6 @@ def detalle_oferta(request, id):
     
     similares = OfertaLaboral.objects.filter(tipo=oferta.tipo, publicada=True).exclude(id=id).order_by('-fecha_publicacion')[:3]
     
-    # Lógica de Preguntas y Respuestas
     if request.method == 'POST' and 'btn_preguntar' in request.POST:
         if not request.user.is_authenticated: 
             messages.warning(request, "Inicia sesión para preguntar.")
@@ -132,7 +134,6 @@ def detalle_oferta(request, id):
     else: 
         form_pregunta = PreguntaForm()
 
-    # Algoritmo de Match (Compatibilidad)
     match_percent = None
     match_details = []
     if request.user.is_authenticated:
@@ -170,15 +171,10 @@ def publicar_empleo(request):
         if form.is_valid():
             oferta = form.save(commit=False)
             oferta.usuario = request.user
-            
-            # --- MODO GRATIS ACTIVADO ---
-            oferta.pagada = True       # Marcamos como pagada
-            oferta.publicada = True    # Visible inmediatamente
-            # --------------------------
-
+            oferta.pagada = True       
+            oferta.publicada = True    
             oferta.save()
             
-            # USO DEL HILO PARA ALERTAS
             try:
                 palabras = oferta.titulo.split() if oferta.titulo else []
                 query = Q(region=oferta.region) & (Q(palabra_clave__icontains=oferta.titulo) | Q(palabra_clave__in=palabras))
@@ -190,7 +186,6 @@ def publicar_empleo(request):
             except Exception as e: 
                 print(f"Error alertas: {e}")
 
-            # Redirigir directo a éxito (saltando pago)
             return redirect('pagina_exito') 
     else: 
         form = NuevaOfertaForm()
@@ -230,7 +225,6 @@ def perfil_empresa(request, nombre_empresa):
     perfil = PerfilEmpresa.objects.filter(nombre__iexact=nombre_empresa).first()
     ofertas = OfertaLaboral.objects.filter(empresa__icontains=nombre_empresa, publicada=True).order_by('-fecha_publicacion')
     
-    # Formulario de Valoración
     if request.method == 'POST':
         form = ValoracionForm(request.POST)
         if form.is_valid(): 
@@ -251,10 +245,8 @@ def publicar_candidato(request):
         messages.warning(request, "⚠️ Para publicar tu CV, inicia sesión o regístrate.")
         return redirect('login')
 
-    try:
-        candidato = request.user.candidato
-    except:
-        candidato = None
+    try: candidato = request.user.candidato
+    except: candidato = None
 
     if request.method == 'POST':
         form = NuevoCandidatoForm(request.POST, request.FILES, instance=candidato)
@@ -265,7 +257,6 @@ def publicar_candidato(request):
             return redirect('pagina_exito')
     else: 
         form = NuevoCandidatoForm(instance=candidato)
-    
     return render(request, 'publicar_candidato.html', {'form': form})
 
 @login_required
@@ -281,7 +272,6 @@ def postular_oferta(request, id):
     Postulacion.objects.create(oferta=oferta, candidato=candidato)
     if oferta.usuario: 
         Notificacion.objects.create(usuario=oferta.usuario, mensaje=f"📄 Nuevo candidato: {candidato.nombre} postuló a {oferta.titulo}", enlace=f"/gestion-oferta/{oferta.id}/candidatos/")
-    
     messages.success(request, "¡Postulación enviada con éxito!")
     return redirect('detalle', id=id)
 
@@ -311,8 +301,6 @@ def gestion_candidatos(request, id_oferta):
 @login_required
 def exportar_candidatos_csv(request, id_oferta):
     oferta = get_object_or_404(OfertaLaboral, id=id_oferta, usuario=request.user)
-    
-    # --- MODO GRATIS: SOLO VERIFICAMOS QUE SEA EMPRESA ---
     if not hasattr(request.user, 'perfil_empresa'):
         messages.error(request, "Acción exclusiva para empresas registradas.")
         return redirect('home')
@@ -337,7 +325,6 @@ def detalle_candidato(request, id):
     candidato = get_object_or_404(Candidato, id=id)
     if not candidato.publicado: messages.error(request, "Perfil no disponible."); return redirect('candidatos')
     
-    # --- MODO GRATIS: TODOS PUEDEN VER CONTACTO ---
     puede_ver_contacto = False
     if request.user.is_authenticated:
         if hasattr(request.user, 'candidato') and request.user.candidato.id == candidato.id: 
@@ -346,7 +333,6 @@ def detalle_candidato(request, id):
             puede_ver_contacto = True
         elif request.user.is_staff: 
             puede_ver_contacto = True
-    # ----------------------------------------------
 
     return render(request, 'detalle_candidato.html', {'candidato': candidato, 'puede_ver_contacto': puede_ver_contacto})
 
@@ -368,8 +354,6 @@ def mis_postulaciones(request):
     except: messages.warning(request, "Primero crea tu Perfil de Talento."); return redirect('publicar_perfil')
     postulaciones = Postulacion.objects.filter(candidato=candidato).order_by('-fecha')
     return render(request, 'mis_postulaciones.html', {'postulaciones': postulaciones, 'candidato': candidato})
-
-# --- FAVORITOS Y NOTIFICACIONES ---
 
 @login_required
 def toggle_favorito(request, id_oferta):
@@ -402,24 +386,21 @@ def marcar_leidas(request):
     Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
-# --- USUARIOS Y AUTENTICACIÓN (BLINDADO CON CLOUDFLARE) ---
+# --- USUARIOS Y AUTENTICACIÓN (CON VERIFICACIÓN CLOUDFLARE) ---
 
 def registro_usuario(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         
-        # --- 🛡️ INICIO BLOQUE CLOUDFLARE TURNSTILE ---
         turnstile_token = request.POST.get('cf-turnstile-response')
         
-        # ⬇️⬇️ ⚠️ PEGA TU SECRET KEY (CLAVE PRIVADA) AQUÍ ⬇️⬇️
+        # ⬇️⬇️ ⚠️ PEGA TU SECRET KEY AQUÍ ⬇️⬇️
         SECRET_KEY_CLOUDFLARE = "0x4AAAAAACKuVgshdJoeBm5ANHQWv_SkzeQ" 
         
-        # Validación: Si no hay token, el bot intentó saltarse el script
         if not turnstile_token:
-             messages.error(request, "⚠️ Error de seguridad: Por favor completa la verificación 'No soy un robot'.")
+             messages.error(request, "⚠️ Error de seguridad: Completa el captcha 'No soy un robot'.")
              return render(request, 'registration/registro.html', {'form': form})
 
-        # Preguntamos a Cloudflare si el token es válido
         try:
             verificacion = requests.post(
                 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
@@ -430,32 +411,58 @@ def registro_usuario(request):
                 }
             ).json()
 
-            # Si Cloudflare dice "false", es un bot o falló la prueba
             if not verificacion.get('success'):
-                messages.error(request, "🤖 Detectamos comportamiento automatizado. Intenta de nuevo.")
+                messages.error(request, "🤖 Verificación fallida. Intenta de nuevo.")
                 return render(request, 'registration/registro.html', {'form': form})
                 
         except Exception as e:
-            # Si falla la conexión con Cloudflare (raro), lo dejamos pasar
-            print(f"Error conectando con Cloudflare: {e}")
-        # --- 🛡️ FIN BLOQUE CLOUDFLARE ---
+            print(f"Error Cloudflare: {e}")
 
         if form.is_valid():
-            user = form.save()
-            login(request, user)
+            user = form.save(commit=False)
+            user.is_active = False # ⛔ CUENTA DORMIDA
+            user.save()
             
-            # Notificación de bienvenida
-            mensaje = f"Hola {user.first_name},\n\nBienvenido a Busca Pega Chile. Tu cuenta ha sido creada exitosamente."
-            EmailThread("¡Bienvenido a la comunidad!", mensaje, [user.email]).start()
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
             
-            messages.success(request, f'¡Cuenta creada exitosamente! Bienvenido, {user.first_name}.')
-            return redirect('home')
+            domain = "www.buscapegachile.cl"
+            link = f"https://{domain}/activar/{uid}/{token}/"
+            
+            asunto = "🚀 Activa tu cuenta en Busca Pega Chile"
+            mensaje = f"""
+            Hola {user.first_name},
+            Haz clic aquí para verificar tu correo y activar tu cuenta:
+            {link}
+            """
+            
+            EmailThread(asunto, mensaje, [user.email]).start()
+            
+            messages.success(request, f'¡Cuenta creada! 📩 Revisa tu correo {user.email} y activa tu cuenta.')
+            return redirect('login')
         else:
             messages.error(request, "Por favor corrige los errores del formulario.")
     else:
         form = RegistroForm()
         
     return render(request, 'registration/registro.html', {'form': form})
+
+def activar_cuenta(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        login(request, user)
+        messages.success(request, "🎉 ¡Cuenta verificada exitosamente! Bienvenido.")
+        return redirect('home')
+    else:
+        messages.error(request, "El enlace de activación es inválido o ya expiró.")
+        return redirect('home')
 
 def logout_usuario(request): 
     logout(request)
@@ -482,6 +489,49 @@ def panel_admin(request):
     context = {'kpi_ofertas': total_ofertas, 'kpi_candidatos': total_candidatos, 'kpi_usuarios': total_usuarios, 'labels_reg': json.dumps(labels_reg), 'data_reg': json.dumps(data_reg), 'data_pie': json.dumps([publicadas, pendientes])}
     return render(request, 'panel_admin.html', context)
 
+# --- SECCIÓN DE SERVICIOS / FREELANCE (NUEVO) ---
+
+@login_required
+def publicar_servicio(request):
+    if request.method == 'POST':
+        form = NuevoServicioForm(request.POST, request.FILES)
+        if form.is_valid():
+            servicio = form.save(commit=False)
+            servicio.usuario = request.user
+            servicio.publicado = True
+            servicio.save()
+            messages.success(request, "¡Tu servicio ha sido publicado!")
+            return redirect('lista_servicios')
+    else:
+        initial_data = {'email_contacto': request.user.email}
+        if hasattr(request.user, 'candidato'):
+            initial_data['telefono'] = request.user.candidato.telefono
+        form = NuevoServicioForm(initial=initial_data)
+        
+    return render(request, 'servicios/publicar_servicio.html', {'form': form})
+
+def lista_servicios(request):
+    servicios = Servicio.objects.filter(publicado=True).order_by('-fecha_publicacion')
+    
+    rubro = request.GET.get('rubro')
+    region = request.GET.get('region')
+    q = request.GET.get('q')
+    
+    if rubro: servicios = servicios.filter(rubro=rubro)
+    if region: servicios = servicios.filter(region=region)
+    if q: servicios = servicios.filter(titulo__icontains=q)
+    
+    return render(request, 'servicios/lista_servicios.html', {
+        'servicios': servicios,
+        'rubros': RUBROS_CHILE,
+        'regiones': REGIONES_CHILE
+    })
+
+def detalle_servicio(request, id):
+    servicio = get_object_or_404(Servicio, id=id)
+    return render(request, 'servicios/detalle_servicio.html', {'servicio': servicio})
+
+
 # --- EXTRAS ---
 
 def crear_alerta(request):
@@ -493,7 +543,6 @@ def pagina_planes(request): return render(request, 'planes.html')
 
 @login_required
 def pago_simulado(request, plan):
-    # NOTA: Aunque el sitio es gratis, dejamos esta vista por si en el futuro se reactiva
     precio = "0"; nombre_plan = ""
     if plan == 'pro': precio = "29.990"; nombre_plan = "Plan Reclutador PRO"
     elif plan == 'corp': precio = "59.990"; nombre_plan = "Plan Corporativo"
@@ -551,7 +600,6 @@ def mapa_empleos(request):
             })
     return render(request, 'mapa.html', {'marcadores_json': json.dumps(marcadores)})
 
-# --- DEBUG DE CORREO ---
 def prueba_email(request):
     try:
         send_mail(

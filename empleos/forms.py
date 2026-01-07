@@ -224,3 +224,24 @@ class RegistroForm(UserCreationForm):
         if val != 10: 
             raise forms.ValidationError("Error matemático. ¿Eres un robot?")
         return val
+    class NuevoServicioForm(forms.ModelForm):
+    aceptar_terminos = forms.BooleanField(required=False)
+    
+    class Meta:
+        model = Servicio
+        fields = ['titulo', 'rubro', 'region', 'descripcion', 'precio_referencial', 'telefono', 'email_contacto', 'imagen']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Hago páginas web, Gasfiter certificado...'}),
+            'rubro': forms.Select(attrs={'class': 'form-select'}),
+            'region': forms.Select(attrs={'class': 'form-select'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe tu experiencia y qué incluye tu servicio...'}),
+            'precio_referencial': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: A convenir, Desde 1UF...'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+56 9 ...'}),
+            'email_contacto': forms.EmailInput(attrs={'class': 'form-control'}),
+            'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields: self.fields[field].required = True # Hacemos todo obligatorio para que se vea bien
+        self.fields['imagen'].required = False # La imagen es opcional

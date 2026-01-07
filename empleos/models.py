@@ -132,3 +132,25 @@ class Noticia(models.Model): titulo = models.CharField(max_length=200); imagen =
 class Valoracion(models.Model): empresa_nombre = models.CharField(max_length=100); estrellas = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)]); comentario = models.TextField(); fecha = models.DateTimeField(auto_now_add=True); aprobado = models.BooleanField(default=True)
 class Suscriptor(models.Model): email = models.EmailField(unique=True); fecha_registro = models.DateTimeField(auto_now_add=True)
 class ReporteOferta(models.Model): oferta = models.ForeignKey(OfertaLaboral, on_delete=models.CASCADE); motivo = models.CharField(max_length=3); detalle = models.TextField(blank=True); fecha = models.DateTimeField(auto_now_add=True); resuelto = models.BooleanField(default=False)
+# --- MODELO DE SERVICIOS / FREELANCE ---
+class Servicio(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='servicios')
+    titulo = models.CharField(max_length=200, verbose_name="¿Qué servicio ofreces?") # Ej: Desarrollo Web, Gasfitería
+    descripcion = models.TextField(verbose_name="Detalle del servicio")
+    rubro = models.CharField(max_length=50, choices=RUBROS_CHILE)
+    region = models.CharField(max_length=50, choices=REGIONES_CHILE)
+    
+    # Datos de contacto específicos para este servicio
+    telefono = models.CharField(max_length=20, verbose_name="WhatsApp / Teléfono")
+    email_contacto = models.EmailField(verbose_name="Correo de contacto")
+    
+    # Imagen del trabajo (Portafolio o foto referencial)
+    imagen = models.ImageField(upload_to='servicios/', blank=True, null=True)
+    
+    precio_referencial = models.CharField(max_length=100, blank=True, null=True, placeholder="Ej: Desde $20.000, A convenir...")
+    
+    fecha_publicacion = models.DateTimeField(default=timezone.now)
+    publicado = models.BooleanField(default=True) # Se publica directo (Modo Gratis)
+
+    def __str__(self):
+        return f"{self.titulo} - {self.usuario.first_name}"
