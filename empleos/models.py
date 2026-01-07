@@ -147,7 +147,7 @@ class Servicio(models.Model):
     # Imagen del trabajo (Portafolio o foto referencial)
     imagen = models.ImageField(upload_to='servicios/', blank=True, null=True)
     
-    precio_referencial = models.CharField(max_length=100, blank=True, null=True, placeholder="Ej: Desde $20.000, A convenir...")
+    precio_referencial = models.CharField(max_length=100, blank=True, null=True)
     
     fecha_publicacion = models.DateTimeField(default=timezone.now)
     publicado = models.BooleanField(default=True) # Se publica directo (Modo Gratis)
