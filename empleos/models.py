@@ -81,7 +81,9 @@ class PerfilEmpresa(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     es_destacada = models.BooleanField(default=False)
     es_premium = models.BooleanField(default=False)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    
+    # 🔴 CORREGIDO: Usamos default=timezone.now para evitar error de migración
+    fecha_creacion = models.DateTimeField(default=timezone.now)
 
     def __str__(self): return self.nombre or self.usuario.username
 
@@ -151,8 +153,7 @@ class Valoracion(models.Model):
 class Noticia(models.Model):
     titulo = models.CharField(max_length=200)
     
-    # 🔴 AQUÍ ESTABA EL ERROR 🔴
-    # Le agregamos un default para que no pida confirmación manual
+    # 🔴 CORREGIDO: Agregado default para evitar error de migración
     bajada = models.TextField(default="Sin resumen disponible", blank=True)
     
     contenido = models.TextField()
