@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 
-# --- FUNCIONES AUXILIARES (NO BORRAR PARA EVITAR ERRORES DE MIGRACIÓN) ---
+# --- FUNCIONES AUXILIARES (NO BORRAR - Requeridas por migraciones antiguas) ---
 
 def renombrar_foto(instance, filename):
     """Genera un nombre único para las fotos de perfil"""
@@ -25,6 +25,12 @@ def renombrar_banner(instance, filename):
     ext = filename.split('.')[-1]
     filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join('banners_empresas/', filename)
+
+def renombrar_archivo(instance, filename):
+    """Genera un nombre único para archivos generales (CVs, imágenes de ofertas)"""
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    return os.path.join('uploads/', filename)
 
 def validar_video(value):
     """Valida que el video no pese más de 50MB"""
@@ -74,11 +80,8 @@ RUBROS_CHILE = [
 class PerfilEmpresa(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_empresa')
     nombre = models.CharField(max_length=150, verbose_name="Nombre de la Empresa", blank=True, null=True)
-    
-    # Usamos las funciones para mantener compatibilidad con migraciones antiguas
     logo = models.ImageField(upload_to=renombrar_logo, blank=True, null=True)
     banner = models.ImageField(upload_to=renombrar_banner, blank=True, null=True)
-    
     sitio_web = models.URLField(blank=True, null=True)
     descripcion = models.TextField(blank=True, null=True)
     es_destacada = models.BooleanField(default=False)
@@ -106,7 +109,10 @@ class OfertaLaboral(models.Model):
     email_contacto = models.EmailField(blank=True, null=True)
     etiquetas = models.CharField(max_length=200, blank=True, null=True, help_text="Ej: Python, Ventas, Licencia B")
     descripcion = models.TextField()
-    imagen = models.ImageField(upload_to='ofertas/', blank=True, null=True)
+    
+    # Usamos renombrar_archivo aquí por si alguna migración antigua lo pide
+    imagen = models.ImageField(upload_to=renombrar_archivo, blank=True, null=True)
+    
     publicada = models.BooleanField(default=False)
     pagada = models.BooleanField(default=False)
     es_destacado = models.BooleanField(default=False)
@@ -119,18 +125,8 @@ class Candidato(models.Model):
     nombre = models.CharField(max_length=200)
     titular = models.CharField(max_length=200, verbose_name="Titular Profesional", help_text="Ej: Ingeniero Comercial, Gasfiter Certificado")
     rubro = models.CharField(max_length=50, choices=RUBROS_CHILE, default='otro')
-    
-    # Función necesaria para migraciones antiguas
     foto = models.ImageField(upload_to=renombrar_foto, blank=True, null=True)
-    
-    video = models.FileField(
-        upload_to='videos_candidatos/', 
-        blank=True, 
-        null=True, 
-        verbose_name="Video de Presentación (Opcional)",
-        validators=[FileExtensionValidator(allowed_extensions=['mp4', 'mov', 'avi']), validar_video]
-    )
-    
+    video = models.FileField(upload_to='videos_candidatos/', blank=True, null=True, verbose_name="Video de Presentación (Opcional)", validators=[FileExtensionValidator(allowed_extensions=['mp4', 'mov', 'avi']), validar_video])
     region = models.CharField(max_length=50, choices=REGIONES_CHILE)
     experiencia = models.CharField(max_length=50, choices=NIVEL_EXPERIENCIA)
     pretension_renta = models.IntegerField(blank=True, null=True)
@@ -138,7 +134,10 @@ class Candidato(models.Model):
     telefono = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     linkedin = models.URLField(blank=True, null=True)
-    cv = models.FileField(upload_to='cvs/', blank=True, null=True)
+    
+    # Usamos renombrar_archivo también para el CV, por si acaso
+    cv = models.FileField(upload_to=renombrar_archivo, blank=True, null=True)
+    
     presentacion = models.TextField(blank=True, null=True, verbose_name="Breve presentación")
     publicado = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -220,7 +219,8 @@ class Servicio(models.Model):
     telefono = models.CharField(max_length=20, verbose_name="WhatsApp / Teléfono")
     email_contacto = models.EmailField(verbose_name="Correo de contacto")
     
-    imagen = models.ImageField(upload_to='servicios/', blank=True, null=True)
+    # Usamos renombrar_archivo aquí también para mantener orden
+    imagen = models.ImageField(upload_to=renombrar_archivo, blank=True, null=True)
     
     precio_referencial = models.CharField(max_length=100, blank=True, null=True)
     
