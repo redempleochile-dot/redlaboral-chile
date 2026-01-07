@@ -6,13 +6,25 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 
-# --- FUNCIONES AUXILIARES (IMPORTANTE: NO BORRAR) ---
+# --- FUNCIONES AUXILIARES (NO BORRAR PARA EVITAR ERRORES DE MIGRACIÓN) ---
 
 def renombrar_foto(instance, filename):
     """Genera un nombre único para las fotos de perfil"""
     ext = filename.split('.')[-1]
     filename = f"{uuid.uuid4()}.{ext}"
     return os.path.join('fotos_candidatos/', filename)
+
+def renombrar_logo(instance, filename):
+    """Genera un nombre único para los logos de empresas"""
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    return os.path.join('logos_empresas/', filename)
+
+def renombrar_banner(instance, filename):
+    """Genera un nombre único para los banners de empresas"""
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    return os.path.join('banners_empresas/', filename)
 
 def validar_video(value):
     """Valida que el video no pese más de 50MB"""
@@ -62,8 +74,11 @@ RUBROS_CHILE = [
 class PerfilEmpresa(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil_empresa')
     nombre = models.CharField(max_length=150, verbose_name="Nombre de la Empresa", blank=True, null=True)
-    logo = models.ImageField(upload_to='logos_empresas/', blank=True, null=True)
-    banner = models.ImageField(upload_to='banners_empresas/', blank=True, null=True)
+    
+    # Usamos las funciones para mantener compatibilidad con migraciones antiguas
+    logo = models.ImageField(upload_to=renombrar_logo, blank=True, null=True)
+    banner = models.ImageField(upload_to=renombrar_banner, blank=True, null=True)
+    
     sitio_web = models.URLField(blank=True, null=True)
     descripcion = models.TextField(blank=True, null=True)
     es_destacada = models.BooleanField(default=False)
@@ -105,7 +120,7 @@ class Candidato(models.Model):
     titular = models.CharField(max_length=200, verbose_name="Titular Profesional", help_text="Ej: Ingeniero Comercial, Gasfiter Certificado")
     rubro = models.CharField(max_length=50, choices=RUBROS_CHILE, default='otro')
     
-    # Usamos la función renombrar_foto aquí para satisfacer la migración 0017
+    # Función necesaria para migraciones antiguas
     foto = models.ImageField(upload_to=renombrar_foto, blank=True, null=True)
     
     video = models.FileField(
