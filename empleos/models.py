@@ -1,18 +1,27 @@
+import os
+import uuid
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
-import uuid
 
-# --- VALIDACIONES (ESTO ES LO QUE FALTABA) ---
+# --- FUNCIONES AUXILIARES (IMPORTANTE: NO BORRAR) ---
+
+def renombrar_foto(instance, filename):
+    """Genera un nombre único para las fotos de perfil"""
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    return os.path.join('fotos_candidatos/', filename)
+
 def validar_video(value):
+    """Valida que el video no pese más de 50MB"""
     filesize = value.size
     limit = 50 * 1024 * 1024 # 50MB
     if filesize > limit:
         raise ValidationError("El tamaño máximo del archivo es de 50MB.")
 
-# OPCIONES PARA LOS SELECTORES
+# --- OPCIONES PARA LOS SELECTORES ---
 REGIONES_CHILE = [
     ('AP', 'Arica y Parinacota'), ('TA', 'Tarapacá'), ('AN', 'Antofagasta'), 
     ('AT', 'Atacama'), ('CO', 'Coquimbo'), ('VA', 'Valparaíso'), 
@@ -95,9 +104,10 @@ class Candidato(models.Model):
     nombre = models.CharField(max_length=200)
     titular = models.CharField(max_length=200, verbose_name="Titular Profesional", help_text="Ej: Ingeniero Comercial, Gasfiter Certificado")
     rubro = models.CharField(max_length=50, choices=RUBROS_CHILE, default='otro')
-    foto = models.ImageField(upload_to='fotos_candidatos/', blank=True, null=True)
     
-    # ✅ RESTAURADO: Campo video con el validador que pide la migración
+    # Usamos la función renombrar_foto aquí para satisfacer la migración 0017
+    foto = models.ImageField(upload_to=renombrar_foto, blank=True, null=True)
+    
     video = models.FileField(
         upload_to='videos_candidatos/', 
         blank=True, 
@@ -197,7 +207,6 @@ class Servicio(models.Model):
     
     imagen = models.ImageField(upload_to='servicios/', blank=True, null=True)
     
-    # ✅ SIN PLACEHOLDER (Correcto)
     precio_referencial = models.CharField(max_length=100, blank=True, null=True)
     
     fecha_publicacion = models.DateTimeField(default=timezone.now)
