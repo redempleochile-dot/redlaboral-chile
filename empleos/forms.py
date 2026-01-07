@@ -6,16 +6,15 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import (
     OfertaLaboral, Candidato, Valoracion, Suscriptor, 
-    PerfilEmpresa, ReporteOferta, Pregunta
+    PerfilEmpresa, ReporteOferta, Pregunta, Servicio
 )
 
 User = get_user_model()
 
-# Lista global de palabras prohibidas para todo el sitio
+# Lista global de palabras prohibidas
 PALABRAS_PROHIBIDAS = ['estafa', 'dinero facil', 'sexo', 'xxx', 'idiota', 'tonto', 'basura']
 
 def validar_texto_limpio(texto):
-    """Validador global para evitar lenguaje ofensivo"""
     if texto:
         texto_bajo = texto.lower()
         for palabra in PALABRAS_PROHIBIDAS:
@@ -173,7 +172,7 @@ class NuevoCandidatoForm(forms.ModelForm):
         if not tel: return None
         return tel
 
-# --- REGISTRO DE USUARIOS (CON SEGURIDAD MEJORADA) ---
+# --- REGISTRO DE USUARIOS ---
 
 class RegistroForm(UserCreationForm):
     email = forms.EmailField(required=True, label="Correo Electrónico", widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@correo.cl'}))
@@ -188,11 +187,8 @@ class RegistroForm(UserCreationForm):
         widgets = {'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de usuario único'})}
         help_texts = {'username': None}
 
-    # 🔥 SEGURIDAD ANTI-TROLL: BLOQUEO DE DOMINIOS BASURA
     def clean_email(self):
         email = self.cleaned_data.get('email').lower()
-        
-        # Lista negra de dominios temporales
         dominios_basura = [
             'icousd.com', 'tempmail.com', '10minutemail.com', 
             'guerrillamail.com', 'yopmail.com', 'sharklasers.com',
@@ -205,10 +201,8 @@ class RegistroForm(UserCreationForm):
         
         if User.objects.filter(email=email).exists(): 
             raise forms.ValidationError("Este correo ya está registrado.")
-            
         return email
 
-    # 🔥 SEGURIDAD ANTI-TROLL: BLOQUEO DE NOMBRES FALSOS
     def clean_first_name(self):
         nombre = self.cleaned_data.get('first_name')
         palabras_ofensivas = ['tumama', 'tu mama', 'nadie', 'tonto', 'admin', 'root', 'yonosoy']
@@ -216,7 +210,6 @@ class RegistroForm(UserCreationForm):
         for palabra in palabras_ofensivas:
             if palabra in nombre.lower().replace(" ", ""):
                 raise forms.ValidationError("Por favor ingresa un nombre válido.")
-        
         return nombre
 
     def clean_captcha(self):
@@ -224,7 +217,11 @@ class RegistroForm(UserCreationForm):
         if val != 10: 
             raise forms.ValidationError("Error matemático. ¿Eres un robot?")
         return val
-    class NuevoServicioForm(forms.ModelForm):
+
+# --- NUEVO FORMULARIO PARA SERVICIOS (CON INDENTACIÓN CORREGIDA) ---
+
+class NuevoServicioForm(forms.ModelForm):
+    # ✅ ESTA LÍNEA DEBE TENER SANGRÍA (4 ESPACIOS)
     aceptar_terminos = forms.BooleanField(required=False)
     
     class Meta:
@@ -243,5 +240,6 @@ class RegistroForm(UserCreationForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields: self.fields[field].required = True # Hacemos todo obligatorio para que se vea bien
-        self.fields['imagen'].required = False # La imagen es opcional
+        for field in self.fields: self.fields[field].required = True 
+        self.fields['imagen'].required = False
+        self.fields['aceptar_terminos'].required = False
