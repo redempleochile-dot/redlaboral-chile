@@ -1,7 +1,16 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 import uuid
+
+# --- VALIDACIONES (ESTO ES LO QUE FALTABA) ---
+def validar_video(value):
+    filesize = value.size
+    limit = 50 * 1024 * 1024 # 50MB
+    if filesize > limit:
+        raise ValidationError("El tamaño máximo del archivo es de 50MB.")
 
 # OPCIONES PARA LOS SELECTORES
 REGIONES_CHILE = [
@@ -87,7 +96,16 @@ class Candidato(models.Model):
     titular = models.CharField(max_length=200, verbose_name="Titular Profesional", help_text="Ej: Ingeniero Comercial, Gasfiter Certificado")
     rubro = models.CharField(max_length=50, choices=RUBROS_CHILE, default='otro')
     foto = models.ImageField(upload_to='fotos_candidatos/', blank=True, null=True)
-    video = models.FileField(upload_to='videos_presentacion/', blank=True, null=True, verbose_name="Video de Presentación (Opcional)")
+    
+    # ✅ RESTAURADO: Campo video con el validador que pide la migración
+    video = models.FileField(
+        upload_to='videos_candidatos/', 
+        blank=True, 
+        null=True, 
+        verbose_name="Video de Presentación (Opcional)",
+        validators=[FileExtensionValidator(allowed_extensions=['mp4', 'mov', 'avi']), validar_video]
+    )
+    
     region = models.CharField(max_length=50, choices=REGIONES_CHILE)
     experiencia = models.CharField(max_length=50, choices=NIVEL_EXPERIENCIA)
     pretension_renta = models.IntegerField(blank=True, null=True)
@@ -166,7 +184,7 @@ class Favorito(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     class Meta: unique_together = ('usuario', 'oferta')
 
-# --- MODELO DE SERVICIOS / FREELANCE (CORREGIDO) ---
+# --- MODELO DE SERVICIOS / FREELANCE ---
 class Servicio(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='servicios')
     titulo = models.CharField(max_length=200, verbose_name="¿Qué servicio ofreces?")
@@ -179,7 +197,7 @@ class Servicio(models.Model):
     
     imagen = models.ImageField(upload_to='servicios/', blank=True, null=True)
     
-    # ✅ SIN PLACEHOLDER (Aquí estaba el error)
+    # ✅ SIN PLACEHOLDER (Correcto)
     precio_referencial = models.CharField(max_length=100, blank=True, null=True)
     
     fecha_publicacion = models.DateTimeField(default=timezone.now)
