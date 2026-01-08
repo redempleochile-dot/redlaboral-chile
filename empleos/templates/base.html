@@ -13,8 +13,8 @@
     
     <style>
         :root {
-            --color-principal: #005f73; /* Verde Petróleo */
-            --color-accion: #ca6702;    /* Naranja */
+            --color-principal: #005f73; 
+            --color-accion: #ca6702;    
         }
         
         body {
@@ -25,29 +25,16 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Sobreescribir Bootstrap Primary (Azul -> Verde Petróleo) */
-        .bg-primary, .btn-primary {
-            background-color: var(--color-principal) !important;
-            border-color: var(--color-principal) !important;
-        }
-
-        /* Sobreescribir Bootstrap Success (Verde -> Naranja) */
-        .btn-success, .btn-accent {
-            background-color: var(--color-accion) !important;
-            border-color: var(--color-accion) !important;
-            color: white !important;
-        }
-
-        /* Navbar personalizado */
+        /* Navbar Azul Oscuro (Tu diseño) */
         .navbar {
-            background-color: #0a2540 !important; /* Azul oscuro profesional */
+            background-color: #0a2540 !important; 
         }
         .navbar-brand {
             font-weight: bold;
             color: white !important;
         }
 
-        /* Footer al fondo */
+        /* Footer */
         footer {
             margin-top: auto;
             background-color: #0a2540;
@@ -55,11 +42,17 @@
             padding: 20px 0;
             text-align: center;
         }
+        
+        /* Ajuste de Alertas */
+        .alert-floating {
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
                 🇨🇱 Busca Pega Chile
@@ -76,16 +69,14 @@
                     
                     {% if user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link text-white fw-bold" href="{% url 'mis_avisos' %}">Mis Avisos</a></li>
-                        
                         <li class="nav-item dropdown ms-2">
                             <a class="nav-link dropdown-toggle btn btn-outline-light btn-sm px-3 rounded-pill" href="#" role="button" data-bs-toggle="dropdown">
                                 Hola, {{ user.first_name|default:user.username }}
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                <li><a class="dropdown-item" href="{% url 'publicar_candidato' %}"><i class="fas fa-file-alt me-2"></i> Mi CV</a></li>
-                                <li><a class="dropdown-item" href="{% url 'mis_avisos' %}"><i class="fas fa-briefcase me-2"></i> Mis Ofertas</a></li>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><a class="dropdown-item" href="{% url 'publicar_candidato' %}">📝 Mi CV</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">🚪 Cerrar Sesión</a></li>
                             </ul>
                         </li>
                     {% else %}
@@ -93,7 +84,7 @@
                             <a class="nav-link text-white" href="{% url 'login' %}">Iniciar Sesión</a>
                         </li>
                         <li class="nav-item ms-2">
-                            <a class="btn btn-success btn-sm rounded-pill px-3 fw-bold" href="{% url 'registro_usuario' %}">Regístrate</a>
+                            <a class="btn btn-warning btn-sm rounded-pill px-3 fw-bold" href="{% url 'registro_usuario' %}">Regístrate</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -101,25 +92,17 @@
         </div>
     </nav>
 
-    {% if messages %}
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-10">
-                    {% for message in messages %}
-                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert">
-                            {% if message.tags == 'success' %}
-                                <i class="fas fa-check-circle me-2"></i>
-                            {% elif message.tags == 'error' %}
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                            {% endif %}
-                            <strong>{{ message }}</strong>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show alert-floating" role="alert">
+                    <i class="fas fa-info-circle me-2"></i> 
+                    <strong>{{ message }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            </div>
-        </div>
-    {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
 
     <main class="flex-grow-1">
         {% block content %}
