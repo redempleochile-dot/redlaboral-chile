@@ -83,6 +83,40 @@
     </nav>
 
     <main>
+        {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow" role="alert">
+                    <strong>{{ message }}</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    ```
+
+**¿Qué hace esto?**
+* Pregunta: *"¿Hay mensajes?"*
+* Si hay, crea una alerta de Bootstrap (verde si es éxito, roja si es error).
+* Tiene una `X` para cerrarlo.
+
+---
+
+### PASO 2: Asegurar el Texto en `views.py`
+
+Solo para estar seguros de que el mensaje es **exactamente** lo que quieres, revisemos el final de la función `registro_usuario` en **`empleos/views.py`**.
+
+Asegúrate de que la parte del éxito (`if form.is_valid():`) tenga este mensaje claro:
+
+```python
+            # ... (código anterior de envío de correo) ...
+            
+            EmailThread(asunto, mensaje, [user.email]).start()
+            
+            # 👇 ESTE ES EL MENSAJE QUE VERÁ EL USUARIO
+            messages.success(request, f'¡Cuenta creada con éxito! 📩 Por favor revisa tu correo {user.email} y haz clic en el enlace para activar tu cuenta.')
+            
+            return redirect('login')
         {% block content %}
         {% endblock %}
     </main>
