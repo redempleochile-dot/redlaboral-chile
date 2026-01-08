@@ -25,7 +25,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Sobreescribir Bootstrap Primary (Azul -> Verde) */
+        /* Sobreescribir Bootstrap Primary (Azul -> Verde Petróleo) */
         .bg-primary, .btn-primary {
             background-color: var(--color-principal) !important;
             border-color: var(--color-principal) !important;
@@ -38,7 +38,7 @@
             color: white !important;
         }
 
-        /* Navbar */
+        /* Navbar personalizado */
         .navbar {
             background-color: #0a2540 !important; /* Azul oscuro profesional */
         }
@@ -47,7 +47,7 @@
             color: white !important;
         }
 
-        /* Footer */
+        /* Footer al fondo */
         footer {
             margin-top: auto;
             background-color: #0a2540;
@@ -59,7 +59,7 @@
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm mb-4">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
                 🇨🇱 Busca Pega Chile
@@ -81,11 +81,11 @@
                             <a class="nav-link dropdown-toggle btn btn-outline-light btn-sm px-3 rounded-pill" href="#" role="button" data-bs-toggle="dropdown">
                                 Hola, {{ user.first_name|default:user.username }}
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow">
-                                <li><a class="dropdown-item" href="{% url 'publicar_candidato' %}">📝 Mi CV</a></li>
-                                <li><a class="dropdown-item" href="{% url 'mis_avisos' %}">🏢 Mis Ofertas</a></li>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                <li><a class="dropdown-item" href="{% url 'publicar_candidato' %}"><i class="fas fa-file-alt me-2"></i> Mi CV</a></li>
+                                <li><a class="dropdown-item" href="{% url 'mis_avisos' %}"><i class="fas fa-briefcase me-2"></i> Mis Ofertas</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">🚪 Cerrar Sesión</a></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
                             </ul>
                         </li>
                     {% else %}
@@ -102,20 +102,25 @@
     </nav>
 
     {% if messages %}
-        <div class="container mt-4">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0" role="alert">
-                    {% if message.tags == 'success' %}
-                        <i class="fas fa-check-circle me-2"></i>
-                    {% elif message.tags == 'error' %}
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                    {% endif %}
-                    <strong>{{ message }}</strong>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-10">
+                    {% for message in messages %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle me-2"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                            {% endif %}
+                            <strong>{{ message }}</strong>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
+            </div>
         </div>
     {% endif %}
+
     <main class="flex-grow-1">
         {% block content %}
         {% endblock %}
