@@ -21,33 +21,31 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 from django.core.paginator import Paginator
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
 
-# --- NUEVAS IMPORTACIONES PARA ACTIVACIÓN DE CUENTA ---
+# --- IMPORTACIONES PARA ACTIVACIÓN DE CUENTA ---
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 
 # IMPORTACIÓN DE MODELOS Y FORMULARIOS
-# ⚠️ ASEGÚRATE DE QUE 'Servicio' ESTÉ EN TUS MODELOS
 from .models import (
     OfertaLaboral, Candidato, Noticia, Valoracion, Suscriptor, 
     AlertaEmpleo, Postulacion, PerfilEmpresa, ReporteOferta, Notificacion, 
-    Pregunta, Favorito, Servicio, # <--- AGREGADO: Servicio
+    Pregunta, Favorito, Servicio,
     REGIONES_CHILE, NIVEL_EXPERIENCIA, TIPO_TRABAJO, RUBROS_CHILE
 )
 
-# ⚠️ ASEGÚRATE DE QUE 'NuevoServicioForm' ESTÉ EN TUS FORMULARIOS
 from .forms import (
     NuevaOfertaForm, NuevoCandidatoForm, ContactoForm, 
     ValoracionForm, SuscriptorForm, PerfilEmpresaForm, ReporteForm, 
-    PreguntaForm, RegistroForm, NuevoServicioForm # <--- AGREGADO: NuevoServicioForm
+    PreguntaForm, RegistroForm, NuevoServicioForm
 )
 
-# --- UTILIDAD: HILO PARA EMAIL ---
+# --- UTILIDAD: HILO PARA EMAIL (ENVÍO RÁPIDO) ---
 class EmailThread(threading.Thread):
     def __init__(self, subject, message, recipient_list):
         self.subject = subject
@@ -68,7 +66,9 @@ class EmailThread(threading.Thread):
         except Exception as e:
             print(f"⚠️ Error enviando email en segundo plano: {e}")
 
-# --- VISTAS GENERALES ---
+# =========================================================
+# VISTAS GENERALES
+# =========================================================
 
 def pagina_exito(request): 
     return render(request, 'exito.html')
@@ -159,7 +159,9 @@ def detalle_oferta(request, id):
         'match_details': match_details, 'form_pregunta': form_pregunta
     })
 
-# --- GESTIÓN DE EMPRESAS Y OFERTAS ---
+# =========================================================
+# GESTIÓN DE EMPRESAS Y OFERTAS
+# =========================================================
 
 def publicar_empleo(request):
     if not request.user.is_authenticated:
@@ -175,6 +177,7 @@ def publicar_empleo(request):
             oferta.publicada = True    
             oferta.save()
             
+            # Sistema de Alertas Automáticas
             try:
                 palabras = oferta.titulo.split() if oferta.titulo else []
                 query = Q(region=oferta.region) & (Q(palabra_clave__icontains=oferta.titulo) | Q(palabra_clave__in=palabras))
@@ -186,6 +189,7 @@ def publicar_empleo(request):
             except Exception as e: 
                 print(f"Error alertas: {e}")
 
+            messages.success(request, "¡Oferta publicada exitosamente!")
             return redirect('pagina_exito') 
     else: 
         form = NuevaOfertaForm()
@@ -201,18 +205,29 @@ def editar_empresa(request):
     perfil, created = PerfilEmpresa.objects.get_or_create(usuario=request.user)
     if request.method == 'POST':
         form = PerfilEmpresaForm(request.POST, request.FILES, instance=perfil)
-        if form.is_valid(): form.save(); messages.success(request, "Perfil actualizado."); return redirect('mis_avisos')
-    else: form = PerfilEmpresaForm(instance=perfil)
+        if form.is_valid(): 
+            form.save()
+            messages.success(request, "Perfil de empresa actualizado.")
+            return redirect('mis_avisos')
+    else: 
+        form = PerfilEmpresaForm(instance=perfil)
     return render(request, 'editar_empresa.html', {'form': form})
 
 @login_required
 def editar_oferta(request, token):
     oferta = get_object_or_404(OfertaLaboral, token=token)
     if request.method == 'POST':
-        if 'borrar' in request.POST: oferta.delete(); messages.success(request, 'Eliminada.'); return redirect('/')
+        if 'borrar' in request.POST: 
+            oferta.delete()
+            messages.success(request, 'Oferta eliminada.')
+            return redirect('/')
         form = NuevaOfertaForm(request.POST, request.FILES, instance=oferta)
-        if form.is_valid(): form.save(); messages.success(request, 'Actualizada.'); return redirect('detalle', id=oferta.id)
-    else: form = NuevaOfertaForm(instance=oferta)
+        if form.is_valid(): 
+            form.save()
+            messages.success(request, 'Oferta actualizada.')
+            return redirect('detalle', id=oferta.id)
+    else: 
+        form = NuevaOfertaForm(instance=oferta)
     return render(request, 'editar_oferta.html', {'form': form, 'oferta': oferta})
 
 def lista_empresas(request):
@@ -231,14 +246,18 @@ def perfil_empresa(request, nombre_empresa):
             val = form.save(commit=False)
             val.empresa_nombre = nombre_empresa
             val.save()
+            messages.success(request, "Valoración enviada.")
             return redirect('perfil_empresa', nombre_empresa=nombre_empresa)
-    else: form = ValoracionForm()
+    else: 
+        form = ValoracionForm()
     
     val = Valoracion.objects.filter(empresa_nombre__icontains=nombre_empresa, aprobado=True).order_by('-fecha')
     avg = val.aggregate(Avg('estrellas'))['estrellas__avg']
     return render(request, 'perfil_empresa.html', {'nombre_empresa': nombre_empresa, 'perfil': perfil, 'ofertas': ofertas, 'valoraciones': val, 'promedio': round(avg, 1) if avg else None, 'form': form})
 
-# --- GESTIÓN DE CANDIDATOS ---
+# =========================================================
+# GESTIÓN DE CANDIDATOS
+# =========================================================
 
 def publicar_candidato(request):
     if not request.user.is_authenticated:
@@ -254,6 +273,7 @@ def publicar_candidato(request):
             perfil = form.save(commit=False)
             perfil.usuario = request.user
             perfil.save()
+            messages.success(request, "CV Actualizado correctamente.")
             return redirect('pagina_exito')
     else: 
         form = NuevoCandidatoForm(instance=candidato)
@@ -263,10 +283,12 @@ def publicar_candidato(request):
 def postular_oferta(request, id):
     oferta = get_object_or_404(OfertaLaboral, id=id)
     try: candidato = request.user.candidato
-    except: messages.error(request, "Crea tu Perfil Profesional antes de postular."); return redirect('publicar_perfil')
+    except: 
+        messages.error(request, "Crea tu Perfil Profesional antes de postular.")
+        return redirect('publicar_candidato')
     
     if Postulacion.objects.filter(oferta=oferta, candidato=candidato).exists(): 
-        messages.warning(request, "Ya has enviado tu perfil.")
+        messages.warning(request, "Ya has enviado tu perfil a esta oferta.")
         return redirect('detalle', id=id)
     
     Postulacion.objects.create(oferta=oferta, candidato=candidato)
@@ -323,7 +345,9 @@ def lista_candidatos(request):
 
 def detalle_candidato(request, id):
     candidato = get_object_or_404(Candidato, id=id)
-    if not candidato.publicado: messages.error(request, "Perfil no disponible."); return redirect('candidatos')
+    if not candidato.publicado: 
+        messages.error(request, "Perfil no disponible.")
+        return redirect('candidatos')
     
     puede_ver_contacto = False
     if request.user.is_authenticated:
@@ -345,13 +369,15 @@ def descargar_cv_pdf(request, id):
     template = get_template(template_path)
     html = template.render(context)
     pisa_status = pisa.CreatePDF(html, dest=response)
-    if pisa_status.err: return HttpResponse('Error')
+    if pisa_status.err: return HttpResponse('Error al generar PDF')
     return response
 
 @login_required
 def mis_postulaciones(request):
     try: candidato = request.user.candidato
-    except: messages.warning(request, "Primero crea tu Perfil de Talento."); return redirect('publicar_perfil')
+    except: 
+        messages.warning(request, "Primero crea tu Perfil de Talento.")
+        return redirect('publicar_candidato')
     postulaciones = Postulacion.objects.filter(candidato=candidato).order_by('-fecha')
     return render(request, 'mis_postulaciones.html', {'postulaciones': postulaciones, 'candidato': candidato})
 
@@ -359,8 +385,11 @@ def mis_postulaciones(request):
 def toggle_favorito(request, id_oferta):
     oferta = get_object_or_404(OfertaLaboral, id=id_oferta)
     favorito, created = Favorito.objects.get_or_create(usuario=request.user, oferta=oferta)
-    if not created: favorito.delete(); messages.info(request, "Eliminado de favoritos.")
-    else: messages.success(request, "Guardado en favoritos ❤️")
+    if not created: 
+        favorito.delete()
+        messages.info(request, "Eliminado de favoritos.")
+    else: 
+        messages.success(request, "Guardado en favoritos ❤️")
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 @login_required
@@ -386,19 +415,20 @@ def marcar_leidas(request):
     Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
     return redirect(request.META.get('HTTP_REFERER', 'home'))
 
-# --- USUARIOS Y AUTENTICACIÓN (CON VERIFICACIÓN CLOUDFLARE) ---
+# =========================================================
+# USUARIOS Y AUTENTICACIÓN (REGISTRO Y ACTIVACIÓN)
+# =========================================================
 
 def registro_usuario(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         
+        # --- VERIFICACIÓN CLOUDFLARE ---
         turnstile_token = request.POST.get('cf-turnstile-response')
-        
-        # ⬇️⬇️ ⚠️ PEGA TU SECRET KEY AQUÍ ⬇️⬇️
         SECRET_KEY_CLOUDFLARE = "0x4AAAAAACKuVgshdJoeBm5ANHQWv_SkzeQ" 
         
         if not turnstile_token:
-             messages.error(request, "⚠️ Error de seguridad: Completa el captcha 'No soy un robot'.")
+             messages.error(request, "⚠️ Por seguridad, completa el captcha 'No soy un robot'.")
              return render(request, 'registration/registro.html', {'form': form})
 
         try:
@@ -417,12 +447,16 @@ def registro_usuario(request):
                 
         except Exception as e:
             print(f"Error Cloudflare: {e}")
+            # En caso de error de conexión con Cloudflare, permitimos el paso por ahora
+            pass
 
+        # --- GUARDADO DEL USUARIO ---
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False # ⛔ CUENTA DORMIDA
+            user.is_active = False # ⛔ CUENTA INACTIVA HASTA VERIFICAR
             user.save()
             
+            # Generar Token de Activación
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             
@@ -432,13 +466,19 @@ def registro_usuario(request):
             asunto = "🚀 Activa tu cuenta en Busca Pega Chile"
             mensaje = f"""
             Hola {user.first_name},
-            Haz clic aquí para verificar tu correo y activar tu cuenta:
+            
+            Haz clic en el siguiente enlace para verificar tu correo y activar tu cuenta:
             {link}
+            
+            Si no fuiste tú, ignora este correo.
             """
             
+            # Enviar correo en segundo plano
             EmailThread(asunto, mensaje, [user.email]).start()
             
-            messages.success(request, f'¡Cuenta creada! 📩 Revisa tu correo {user.email} y activa tu cuenta.')
+            # ✅ MENSAJE DE ÉXITO (ESTE ES EL QUE DEBES VER)
+            messages.success(request, f'¡Cuenta creada con éxito! 📩 Hemos enviado un correo a {user.email}. Confírmalo para ingresar.')
+            
             return redirect('login')
         else:
             messages.error(request, "Por favor corrige los errores del formulario.")
@@ -457,6 +497,7 @@ def activar_cuenta(request, uidb64, token):
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
+        # Iniciar sesión automáticamente
         login(request, user)
         messages.success(request, "🎉 ¡Cuenta verificada exitosamente! Bienvenido.")
         return redirect('home')
@@ -466,30 +507,18 @@ def activar_cuenta(request, uidb64, token):
 
 def logout_usuario(request): 
     logout(request)
-    messages.info(request, "Sesión cerrada.")
+    messages.info(request, "Sesión cerrada correctamente.")
     return redirect('home')
 
 @login_required
 def eliminar_cuenta(request):
-    if request.method == 'POST': request.user.delete(); messages.success(request, "Cuenta eliminada."); return redirect('home')
+    if request.method == 'POST': 
+        request.user.delete()
+        messages.success(request, "Tu cuenta ha sido eliminada permanentemente.")
+        return redirect('home')
     return render(request, 'registration/eliminar_cuenta.html')
 
-# --- ADMIN PANEL ---
-
-@staff_member_required
-def panel_admin(request):
-    total_ofertas = OfertaLaboral.objects.count()
-    total_candidatos = Candidato.objects.count()
-    total_usuarios = User.objects.count()
-    datos_region = OfertaLaboral.objects.values('region').annotate(total=Count('region')).order_by('-total')
-    labels_reg = [dict(REGIONES_CHILE).get(x['region'], x['region']) for x in datos_region]
-    data_reg = [x['total'] for x in datos_region]
-    publicadas = OfertaLaboral.objects.filter(publicada=True).count()
-    pendientes = OfertaLaboral.objects.filter(publicada=False).count()
-    context = {'kpi_ofertas': total_ofertas, 'kpi_candidatos': total_candidatos, 'kpi_usuarios': total_usuarios, 'labels_reg': json.dumps(labels_reg), 'data_reg': json.dumps(data_reg), 'data_pie': json.dumps([publicadas, pendientes])}
-    return render(request, 'panel_admin.html', context)
-
-# --- SECCIÓN DE SERVICIOS / FREELANCE (NUEVO) ---
+# --- SECCIÓN DE SERVICIOS / FREELANCE ---
 
 @login_required
 def publicar_servicio(request):
@@ -531,11 +560,30 @@ def detalle_servicio(request, id):
     servicio = get_object_or_404(Servicio, id=id)
     return render(request, 'servicios/detalle_servicio.html', {'servicio': servicio})
 
+# --- ADMIN PANEL ---
 
-# --- EXTRAS ---
+@staff_member_required
+def panel_admin(request):
+    total_ofertas = OfertaLaboral.objects.count()
+    total_candidatos = Candidato.objects.count()
+    total_usuarios = User.objects.count()
+    datos_region = OfertaLaboral.objects.values('region').annotate(total=Count('region')).order_by('-total')
+    labels_reg = [dict(REGIONES_CHILE).get(x['region'], x['region']) for x in datos_region]
+    data_reg = [x['total'] for x in datos_region]
+    publicadas = OfertaLaboral.objects.filter(publicada=True).count()
+    pendientes = OfertaLaboral.objects.filter(publicada=False).count()
+    context = {'kpi_ofertas': total_ofertas, 'kpi_candidatos': total_candidatos, 'kpi_usuarios': total_usuarios, 'labels_reg': json.dumps(labels_reg), 'data_reg': json.dumps(data_reg), 'data_pie': json.dumps([publicadas, pendientes])}
+    return render(request, 'panel_admin.html', context)
+
+# --- EXTRAS (MAPA, QR, PAGOS, ETC) ---
 
 def crear_alerta(request):
-    if request.method == 'POST': email = request.POST.get('email'); clave = request.POST.get('palabra_clave'); region = request.POST.get('region'); AlertaEmpleo.objects.create(email=email, palabra_clave=clave, region=region); messages.success(request, f"¡Alerta creada!")
+    if request.method == 'POST': 
+        email = request.POST.get('email')
+        clave = request.POST.get('palabra_clave')
+        region = request.POST.get('region')
+        AlertaEmpleo.objects.create(email=email, palabra_clave=clave, region=region)
+        messages.success(request, f"¡Alerta creada!")
     return redirect('home')
 
 def robots_txt(request): return render(request, 'robots.txt', content_type="text/plain")
@@ -548,43 +596,70 @@ def pago_simulado(request, plan):
     elif plan == 'corp': precio = "59.990"; nombre_plan = "Plan Corporativo"
     if request.method == 'POST':
         time.sleep(2)
-        try: perfil = request.user.perfil_empresa; perfil.es_premium = True; perfil.save(); messages.success(request, f"¡Pago exitoso! Bienvenido al {nombre_plan}."); return redirect('mis_avisos')
-        except: messages.error(request, "Error: Solo empresas pueden comprar."); return redirect('home')
+        try: 
+            perfil = request.user.perfil_empresa
+            perfil.es_premium = True
+            perfil.save()
+            messages.success(request, f"¡Pago exitoso! Bienvenido al {nombre_plan}.")
+            return redirect('mis_avisos')
+        except: 
+            messages.error(request, "Error: Solo empresas pueden comprar.")
+            return redirect('home')
     return render(request, 'pago_simulado.html', {'precio': precio, 'nombre_plan': nombre_plan})
 
 def suscribir_newsletter(request):
-    if request.method == 'POST': form = SuscriptorForm(request.POST); form.save(); messages.success(request, 'Suscrito.')
+    if request.method == 'POST': 
+        form = SuscriptorForm(request.POST)
+        if form.is_valid(): form.save()
+        messages.success(request, 'Gracias por suscribirte.')
     return redirect('home')
+
 def pagina_estadisticas(request):
     datos = OfertaLaboral.objects.filter(publicada=True).values('region').annotate(total=Count('region')); labels, data = [], []
     dicc = dict(REGIONES_CHILE)
     for item in datos: labels.append(dicc.get(item['region'], item['region'])); data.append(item['total'])
     return render(request, 'estadisticas.html', {'labels_grafico': json.dumps(labels), 'data_grafico': json.dumps(data)})
+
 def pagina_contacto(request):
     if request.method == 'POST': pass 
     return render(request, 'contacto.html', {'form': ContactoForm()})
+
 def lista_blog(request): return render(request, 'blog.html', {'noticias': Noticia.objects.all().order_by('-fecha_publicacion')})
 def detalle_noticia(request, id): return render(request, 'detalle_noticia.html', {'noticia': get_object_or_404(Noticia, id=id)})
 def terminos_condiciones(request): return render(request, 'legales/terminos.html')
 def politica_privacidad(request): return render(request, 'legales/privacidad.html')
+
 def lista_practicas(request):
     practicas = OfertaLaboral.objects.filter(tipo='PRA', publicada=True).order_by('-fecha_publicacion')
     if request.GET.get('region'): practicas = practicas.filter(region=request.GET.get('region'))
     return render(request, 'lista_practicas.html', {'practicas': practicas, 'regiones': REGIONES_CHILE})
 
 def imprimir_oferta(request, id):
-    oferta = get_object_or_404(OfertaLaboral, id=id); url_oferta = request.build_absolute_uri(f"/oferta/{oferta.id}/"); qr = qrcode.QRCode(version=1, box_size=10, border=4); qr.add_data(url_oferta); qr.make(fit=True); img = qr.make_image(fill='black', back_color='white'); buffer = io.BytesIO(); img.save(buffer, format="PNG"); img_str = base64.b64encode(buffer.getvalue()).decode()
+    oferta = get_object_or_404(OfertaLaboral, id=id)
+    url_oferta = request.build_absolute_uri(f"/oferta/{oferta.id}/")
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(url_oferta)
+    qr.make(fit=True)
+    img = qr.make_image(fill='black', back_color='white')
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    img_str = base64.b64encode(buffer.getvalue()).decode()
     return render(request, 'imprimir.html', {'oferta': oferta, 'qr_b64': img_str})
 
 def reportar_oferta(request, id):
     oferta = get_object_or_404(OfertaLaboral, id=id)
     if request.method == 'POST':
         form = ReporteForm(request.POST)
-        if form.is_valid(): reporte = form.save(commit=False); reporte.oferta = oferta; reporte.save(); messages.warning(request, "Reporte recibido.")
+        if form.is_valid(): 
+            reporte = form.save(commit=False)
+            reporte.oferta = oferta
+            reporte.save()
+            messages.warning(request, "Reporte recibido. Lo revisaremos pronto.")
     return redirect('detalle', id=id)
 
 def mapa_empleos(request):
-    ofertas = OfertaLaboral.objects.filter(publicada=True); marcadores = []
+    ofertas = OfertaLaboral.objects.filter(publicada=True)
+    marcadores = []
     COORDENADAS_REGIONES = {'AP': [-18.4783, -70.3126], 'TA': [-20.2133, -70.1503], 'AN': [-23.6509, -70.3975], 'AT': [-27.3668, -70.3323], 'CO': [-29.9533, -71.3436], 'VA': [-33.0472, -71.6127], 'RM': [-33.4489, -70.6693], 'BI': [-36.8201, -73.0444], 'AR': [-38.7359, -72.5904], 'LS': [-41.4689, -72.9411], 'AI': [-45.5712, -72.0685], 'MA': [-53.1638, -70.9171], 'NB': [-36.6063, -72.1023], 'LR': [-39.8142, -73.2459]}
     
     for oferta in ofertas:

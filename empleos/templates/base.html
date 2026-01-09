@@ -25,12 +25,24 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Navbar Azul Oscuro (Tu diseño) */
+        /* Navbar Azul Oscuro */
         .navbar {
             background-color: #0a2540 !important; 
         }
         .navbar-brand {
             font-weight: bold;
+            color: white !important;
+        }
+
+        /* Botones personalizados */
+        .btn-primary {
+            background-color: var(--color-principal) !important;
+            border-color: var(--color-principal) !important;
+        }
+        
+        .btn-warning {
+            background-color: var(--color-accion) !important;
+            border-color: var(--color-accion) !important;
             color: white !important;
         }
 
@@ -43,10 +55,12 @@
             text-align: center;
         }
         
-        /* Ajuste de Alertas */
+        /* Ajuste de Alertas para visibilidad */
         .alert-floating {
             margin-top: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+            z-index: 1050; /* Asegura que esté por encima de otros elementos */
         }
     </style>
 </head>
@@ -69,14 +83,15 @@
                     
                     {% if user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link text-white fw-bold" href="{% url 'mis_avisos' %}">Mis Avisos</a></li>
+                        
                         <li class="nav-item dropdown ms-2">
                             <a class="nav-link dropdown-toggle btn btn-outline-light btn-sm px-3 rounded-pill" href="#" role="button" data-bs-toggle="dropdown">
                                 Hola, {{ user.first_name|default:user.username }}
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow">
-                                <li><a class="dropdown-item" href="{% url 'publicar_candidato' %}">📝 Mi CV</a></li>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                <li><a class="dropdown-item" href="{% url 'publicar_candidato' %}"><i class="fas fa-file-alt me-2"></i> Mi CV</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">🚪 Cerrar Sesión</a></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
                             </ul>
                         </li>
                     {% else %}
@@ -96,8 +111,16 @@
         {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show alert-floating" role="alert">
-                    <i class="fas fa-info-circle me-2"></i> 
-                    <strong>{{ message }}</strong>
+                    <div class="d-flex align-items-center">
+                        {% if message.tags == 'error' %}
+                            <i class="fas fa-exclamation-triangle me-2 fa-lg"></i>
+                        {% else %}
+                            <i class="fas fa-check-circle me-2 fa-lg"></i>
+                        {% endif %}
+                        <div>
+                            <strong>Aviso:</strong> {{ message }}
+                        </div>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endfor %}

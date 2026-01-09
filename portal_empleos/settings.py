@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import dj_database_url
+from django.contrib.messages import constants as messages
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,7 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',
+    'django.contrib.messages',  # <--- CRÍTICO PARA LAS ALERTAS
     'django.contrib.staticfiles',
     
     # Utilidades Django
@@ -56,11 +57,11 @@ SITE_ID = 1
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware", # Motor de archivos estáticos
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware', # <--- DEBE IR ANTES DE MESSAGES
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware', # <--- CRÍTICO PARA LAS ALERTAS
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -76,7 +77,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+                'django.contrib.messages.context_processors.messages', # <--- CRÍTICO PARA LAS ALERTAS
             ],
         },
     },
@@ -111,17 +112,20 @@ JAZZMIN_SETTINGS = {
     "show_sidebar": True,
     "navigation_expanded": True,
     
-    # Iconos para tus modelos (Opcional, se ve bonito)
+    # Iconos para tus modelos
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
-        "empleos.Oferta": "fas fa-briefcase", # Ajusta si tu modelo se llama distinto
-        "empleos.Empresa": "fas fa-building",
+        # ✅ CORREGIDO: Nombres exactos de tus modelos actuales
+        "empleos.OfertaLaboral": "fas fa-briefcase", 
+        "empleos.PerfilEmpresa": "fas fa-building",
+        "empleos.Candidato": "fas fa-user-tie",
+        "empleos.Servicio": "fas fa-tools",
     },
 }
 
-# Tema visual del admin (Puedes probar otros como 'flatly', 'darkly', etc.)
+# Tema visual del admin
 JAZZMIN_UI_TWEAKS = {
     "theme": "flatly", 
     "dark_mode_theme": "darkly",
@@ -169,3 +173,9 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# =========================================================
+# 🔔 CONFIGURACIÓN DE MENSAJES (SOLUCIÓN AL ERROR VISUAL)
+# =========================================================
+# Esto fuerza a que los mensajes se guarden en la sesión y no en cookies temporales
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
