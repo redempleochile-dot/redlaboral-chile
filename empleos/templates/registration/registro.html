@@ -8,7 +8,7 @@
     
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
-<body class="bg-light d-flex align-items-center justify-content-center py-5">
+<body class="bg-light d-flex align-items-center justify-content-center py-5" style="min-height: 100vh;">
     
     <div class="container" style="max-width: 500px;">
         <div class="text-center mb-4">
@@ -19,6 +19,18 @@
 
         <div class="card shadow-lg border-0 rounded-4">
             <div class="card-body p-5">
+                
+                <div class="alert alert-info border-0 shadow-sm mb-4" role="alert" style="background-color: #e7f1ff; border-left: 5px solid #0d6efd;">
+                    <div class="d-flex">
+                        <div class="me-3 fs-4">📧</div>
+                        <div>
+                            <h6 class="fw-bold text-primary mb-1">Validación Requerida</h6>
+                            <p class="mb-0 small text-dark" style="line-height: 1.4;">
+                                Al finalizar, te enviaremos un correo. <strong>Debes validarlo</strong> para poder ingresar.
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 <form method="post">
                     {% csrf_token %}
                     
@@ -47,7 +59,7 @@
                 </form>
             </div>
             <div class="card-footer bg-white text-center py-3 rounded-bottom-4">
-                <small class="text-muted">¿Ya tienes cuenta? <a href="/login/" class="fw-bold text-decoration-none">Inicia Sesión</a></small>
+                <small class="text-muted">¿Ya tienes cuenta? <a href="{% url 'login' %}" class="fw-bold text-decoration-none">Inicia Sesión</a></small>
             </div>
         </div>
         
