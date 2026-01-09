@@ -179,3 +179,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # =========================================================
 # Esto fuerza a que los mensajes se guarden en la sesión y no en cookies temporales
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+# =========================================================
+# 🔧 ARREGLO PARA ALERTAS EN RAILWAY (CRÍTICO)
+# =========================================================
+
+# 1. Confiar en que Railway maneja el HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 2. Configuración de Mensajes (Usar Cookies es más seguro para esto)
+from django.contrib.messages import constants as messages
+MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
+
+# 3. Etiquetas para que Bootstrap entienda los colores
+MESSAGE_TAGS = {
+    messages.DEBUG: 'secondary',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'danger',
+}
