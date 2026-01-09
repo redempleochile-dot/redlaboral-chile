@@ -25,6 +25,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
+from django.urls import reverse # <--- NUEVO IMPORT NECESARIO
 
 # --- IMPORTACIONES PARA ACTIVACIÓN DE CUENTA ---
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -447,16 +448,14 @@ def registro_usuario(request):
                 
         except Exception as e:
             print(f"Error Cloudflare: {e}")
-            # En caso de error de conexión con Cloudflare, permitimos el paso por ahora
             pass
 
         # --- GUARDADO DEL USUARIO ---
         if form.is_valid():
             user = form.save(commit=False)
-            user.is_active = False # ⛔ CUENTA INACTIVA HASTA VERIFICAR
+            user.is_active = False 
             user.save()
             
-            # Generar Token de Activación
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             
@@ -473,13 +472,13 @@ def registro_usuario(request):
             Si no fuiste tú, ignora este correo.
             """
             
-            # Enviar correo en segundo plano
             EmailThread(asunto, mensaje, [user.email]).start()
             
-            # ✅ MENSAJE DE ÉXITO (ESTE ES EL QUE DEBES VER)
-            messages.success(request, f'¡Cuenta creada con éxito! 📩 Hemos enviado un correo a {user.email}. Confírmalo para ingresar.')
-            
-            return redirect('login')
+            # 🔥 CORRECCIÓN INFALIBLE: Redirigir con señal en la URL 🔥
+            # Esto evita que el mensaje se pierda por problemas de cookies/SSL
+            url_login = reverse('login')
+            return redirect(f'{url_login}?registro_exitoso=True')
+
         else:
             messages.error(request, "Por favor corrige los errores del formulario.")
     else:
@@ -497,7 +496,6 @@ def activar_cuenta(request, uidb64, token):
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
-        # Iniciar sesión automáticamente
         login(request, user)
         messages.success(request, "🎉 ¡Cuenta verificada exitosamente! Bienvenido.")
         return redirect('home')

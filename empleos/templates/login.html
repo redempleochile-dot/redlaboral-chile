@@ -5,14 +5,28 @@
 <div class="container mt-5 mb-5">
     <div class="row justify-content-center">
         <div class="col-md-5">
+
+            {% if request.GET.registro_exitoso %}
+            <div class="alert alert-success alert-dismissible fade show shadow-lg mb-4" role="alert" style="border-left: 8px solid #198754; background-color: #d1e7dd;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-envelope-open-text fa-3x me-3 text-success"></i>
+                    <div>
+                        <h4 class="alert-heading fw-bold text-success">¡Cuenta Creada!</h4>
+                        <p class="mb-0 fs-6 text-dark">
+                            Hemos enviado un correo de confirmación. <br>
+                            <strong>Por favor revisa tu bandeja de entrada (o Spam) para activar tu cuenta.</strong>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
             <div class="card shadow-lg border-0 rounded-3">
-                
                 <div class="card-header text-white text-center py-3" style="background-color: #0a2540;">
                     <h4 class="mb-0 fw-bold">🔐 Iniciar Sesión</h4>
                 </div>
 
                 <div class="card-body p-4">
-                    
                     <div class="alert alert-light border text-center small mb-3">
                         <i class="fas fa-user-circle text-primary"></i> 
                         Usa tu <strong>Nombre de Usuario</strong> (No tu correo).
@@ -20,14 +34,11 @@
 
                     <form method="post">
                         {% csrf_token %}
-                        
                         {{ form|crispy }}
-
                         <div class="d-grid gap-2 mt-4">
                             <button type="submit" class="btn btn-warning btn-lg fw-bold">Entrar</button>
                         </div>
                     </form>
-
                 </div>
                 <div class="card-footer text-center bg-white py-3 rounded-bottom-3">
                     <small>¿No tienes cuenta? <a href="{% url 'registro_usuario' %}" class="fw-bold text-primary text-decoration-none">Regístrate aquí</a></small>
