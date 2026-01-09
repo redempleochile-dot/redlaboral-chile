@@ -1,73 +1,76 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Publicar Perfil | EmpleosChile</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-5">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">🇨🇱 EmpleosChile</a>
-            <a href="/candidatos/" class="btn btn-outline-light btn-sm">Volver</a>
-        </div>
-    </nav>
-    <div class="container pb-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card shadow">
-                    <div class="card-header bg-warning text-dark">
-                        <h4 class="mb-0">👤 Crear Perfil Profesional</h4>
-                    </div>
-                    <div class="card-body p-4">
-                        <form method="post" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-                            
-                            <div class="row">
-                                <div class="col-md-6 mb-3"><label class="fw-bold">Nombre</label>{{ form.nombre }}</div>
-                                <div class="col-md-6 mb-3"><label class="fw-bold">Título / Oficio</label>{{ form.titular }}</div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3"><label class="fw-bold">Rubro</label>{{ form.rubro }}</div>
-                                <div class="col-md-6 mb-3"><label class="fw-bold">Región</label>{{ form.region }}</div>
-                            </div>
-                            <div class="mb-3"><label class="fw-bold">Foto de Perfil (Opcional)</label>{{ form.foto }}</div>
-                            
-                            <hr>
-                            <h5 class="text-muted mb-3">Datos Laborales</h5>
-                            <div class="row">
-                                <div class="col-md-6 mb-3"><label class="fw-bold">Renta Esperada ($)</label>{{ form.pretension_renta }}</div>
-                                <div class="col-md-6 mb-3"><label class="fw-bold">Disponibilidad</label>{{ form.disponibilidad }}</div>
-                            </div>
-                            <div class="mb-3"><label class="fw-bold">Sobre mí (Presentación)</label>{{ form.presentacion }}</div>
-                            <div class="mb-3"><label class="fw-bold">LinkedIn (Opcional)</label>{{ form.linkedin }}</div>
-                            
-                            <hr>
-                            <h5 class="text-muted mb-3">Contacto y CV</h5>
-                            <div class="row">
-                                <div class="col-md-6 mb-3"><label class="fw-bold">Email</label>{{ form.email }}</div>
-                                <div class="col-md-6 mb-3"><label class="fw-bold">Teléfono</label>{{ form.telefono }}</div>
-                            </div>
-                            <div class="mb-3"><label class="fw-bold">Subir CV (PDF)</label>{{ form.cv }}</div>
-                            
-                            <div class="mb-3 bg-light p-3 rounded">
-                                <label class="fw-bold">{{ form.captcha.label }}</label>
-                                {{ form.captcha }}
-                                {% if form.captcha.errors %}<div class="text-danger small mt-1">{{ form.captcha.errors.0 }}</div>{% endif %}
-                            </div>
-                            <div class="mb-3">{{ form.aceptar_terminos }} <label>Acepto términos y condiciones</label></div>
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header text-white text-center py-4" style="background-color: #0a2540;">
+                    <h3 class="fw-bold mb-0"><i class="fas fa-id-card me-2"></i>Mi Perfil Profesional</h3>
+                    <p class="mb-0 opacity-75 small">Completa tus datos para postular a las ofertas.</p>
+                </div>
 
-                            <div class="d-grid gap-2 mt-4">
-                                <button type="submit" class="btn btn-warning btn-lg">💾 Publicar Perfil</button>
-                            </div>
-                        </form>
-                    </div>
+                <div class="card-body p-4 p-md-5">
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <h5 class="text-primary fw-bold mb-3 border-bottom pb-2">
+                            <i class="fas fa-user me-2"></i>Datos Personales
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.nombre|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.titular|as_crispy_field }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.email|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.telefono|as_crispy_field }}</div>
+                        </div>
+
+                        <h5 class="text-primary fw-bold mb-3 mt-4 border-bottom pb-2">
+                            <i class="fas fa-briefcase me-2"></i>Experiencia
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.rubro|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.region|as_crispy_field }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.experiencia|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.disponibilidad|as_crispy_field }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.pretension_renta|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.linkedin|as_crispy_field }}</div>
+                        </div>
+
+                        <h5 class="text-primary fw-bold mb-3 mt-4 border-bottom pb-2">
+                            <i class="fas fa-file-upload me-2"></i>Documentos y Multimedia
+                        </h5>
+                        <div class="alert alert-light border small">
+                            <i class="fas fa-info-circle text-info"></i> Sube una foto profesional y tu CV en formato PDF.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">{{ form.foto|as_crispy_field }}</div>
+                            <div class="col-md-12">{{ form.cv|as_crispy_field }}</div>
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            {{ form.presentacion|as_crispy_field }}
+                        </div>
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark shadow-sm">
+                                <i class="fas fa-save me-2"></i>Guardar Mi Perfil
+                            </button>
+                        </div>
+                    </form>
+
                 </div>
             </div>
+
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
