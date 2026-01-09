@@ -173,24 +173,33 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 # =========================================================
-# 🔔 CONFIGURACIÓN DE MENSAJES (SOLUCIÓN AL ERROR VISUAL)
-# =========================================================
-# Esto fuerza a que los mensajes se guarden en la sesión y no en cookies temporales
-MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
-# =========================================================
-# 🔧 ARREGLO PARA ALERTAS EN RAILWAY (CRÍTICO)
+# 🔧 CONFIGURACIÓN DE PRODUCCIÓN Y MENSAJES (CRÍTICO)
 # =========================================================
 
-# 1. Confiar en que Railway maneja el HTTPS
+# 1. Confianza en el Proxy (Vital para Railway)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = True
 
-# 2. Configuración de Mensajes (Usar Cookies es más seguro para esto)
+# 2. Configuración de Cookies (Obligatorio para que se guarden los mensajes)
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True  # <--- Fuerza el guardado
+
+# 3. Almacenamiento de Mensajes (Usamos Cookies directas, es más robusto aquí)
 from django.contrib.messages import constants as messages
 MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
 
-# 3. Etiquetas para que Bootstrap entienda los colores
+# 4. Orígenes de Confianza (Agrega tus dominios)
+CSRF_TRUSTED_ORIGINS = [
+    'https://buscapegachile.cl',
+    'https://www.buscapegachile.cl',
+    'https://redlaboral-chile-production.up.railway.app',
+]
+
+# 5. Colores de Bootstrap para los mensajes
 MESSAGE_TAGS = {
     messages.DEBUG: 'secondary',
     messages.INFO: 'info',
