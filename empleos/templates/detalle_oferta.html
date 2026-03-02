@@ -1,229 +1,169 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ oferta.titulo }} | Red Laboral Chile</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    {% load humanize %}
-</head>
-<body class="bg-light pb-5">
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
-                <span class="fs-4">🇨🇱</span> Red Laboral Chile
-            </a>
-            <div class="d-flex align-items-center gap-3">
-                <a href="/" class="text-white text-decoration-none small">Volver al listado</a>
-                <a href="/publicar/" class="btn btn-warning btn-sm fw-bold rounded-pill">🚀 Publicar Oferta</a>
-            </div>
-        </div>
-    </nav>
+{% block meta %}
+    <title>{{ oferta.titulo }} en {{ oferta.empresa }} | Busca Pega Chile</title>
+    <meta name="description" content="Postula al cargo de {{ oferta.titulo }} en {{ oferta.empresa }}. Ubicación: {{ oferta.get_region_display }}. Revisa los requisitos y postula hoy.">
+    
+    <meta property="og:title" content="¡Trabajo! {{ oferta.titulo }} - {{ oferta.empresa }}">
+    <meta property="og:description" content="📍 {{ oferta.get_region_display }} | 💼 {{ oferta.get_tipo_display }} | Entra para ver detalles y postular.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80">
+{% endblock %}
 
-    <div class="container mb-5">
-        <div class="row justify-content-center">
-            
-            <div class="col-lg-8">
-                
-                <div class="card shadow-sm border-0 mb-4 rounded-4 overflow-hidden">
-                    <div class="card-body p-4 p-lg-5">
-                        
-                        <div class="d-flex align-items-start gap-3 mb-4">
-                            {% if oferta.imagen %}
-                                <img src="{{ oferta.imagen.url }}" class="rounded-3 border" style="width: 80px; height: 80px; object-fit: contain; padding: 5px;">
-                            {% else %}
-                                <div class="bg-light rounded-3 d-flex align-items-center justify-content-center text-muted border" style="width: 80px; height: 80px; font-size: 2rem;">🏢</div>
-                            {% endif %}
-                            
-                            <div class="flex-grow-1">
-                                <h1 class="fw-bold h2 mb-1">{{ oferta.titulo }}</h1>
-                                <div class="text-muted d-flex align-items-center gap-2">
-                                    <span class="fw-bold text-dark">{{ oferta.empresa }}</span>
-                                    {% if oferta.empresa_verificada %}<i class="bi bi-patch-check-fill text-primary" title="Empresa Verificada"></i>{% endif %}
-                                    <span class="small">• {{ oferta.fecha_publicacion|naturaltime }}</span>
-                                </div>
-                            </div>
-                            
-                            {% if user.is_authenticated %}
-                                <a href="/oferta/{{ oferta.id }}/favorito/" class="btn btn-outline-danger btn-sm rounded-circle shadow-sm" style="width: 40px; height: 40px; display: grid; place-items: center;">
-                                    <i class="bi bi-heart"></i>
-                                </a>
-                            {% endif %}
-                        </div>
+{% block content %}
+<div class="container mt-5 mb-5">
+    
+    <div class="mb-3">
+        <a href="javascript:history.back()" class="text-decoration-none text-muted">
+            <i class="fas fa-arrow-left me-1"></i> Volver a los resultados
+        </a>
+    </div>
 
-                        {% if match_percent is not None %}
-                            <div class="card border-0 bg-light mb-4 rounded-3">
-                                <div class="card-body py-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-cpu"></i> Análisis de Compatibilidad IA</h6>
-                                        <span class="badge bg-primary rounded-pill">{{ match_percent }}% Match</span>
-                                    </div>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-primary" style="width: {{ match_percent }}%"></div>
-                                    </div>
-                                    <div class="mt-2 d-flex gap-3 flex-wrap">
-                                        {% for det in match_details %}
-                                            <small class="text-muted border bg-white px-2 py-1 rounded">{{ det.icon }} {{ det.text }}</small>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        <div class="d-flex flex-wrap gap-2 mb-4">
-                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-normal"><i class="bi bi-geo-alt-fill text-danger"></i> {{ oferta.get_region_display }}</span>
-                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-normal"><i class="bi bi-briefcase-fill text-info"></i> {{ oferta.get_modalidad_display }}</span>
-                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-normal"><i class="bi bi-clock-fill text-warning"></i> {{ oferta.get_tipo_display }}</span>
-                            {% if oferta.sueldo %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold"><i class="bi bi-cash"></i> ${{ oferta.sueldo|intcomma }}</span>
-                            {% endif %}
-                        </div>
-
-                        {% if oferta.wsp_activo and oferta.telefono %}
-                            <div class="mb-4">
-                                <a href="https://wa.me/{{ oferta.telefono_limpio }}?text=Hola,%20vi%20su%20oferta%20de%20{{ oferta.titulo|urlencode }}%20en%20Red%20Laboral%20Chile%20y%20me%20interesa." target="_blank" class="btn btn-success fw-bold rounded-pill w-100 py-2 shadow-sm">
-                                    <i class="bi bi-whatsapp"></i> Contactar al Reclutador por WhatsApp
-                                </a>
-                                <div class="text-center mt-1"><small class="text-muted" style="font-size: 0.75rem;">Se abrirá WhatsApp Web o la App</small></div>
-                            </div>
-                        {% endif %}
-
-                        <hr class="text-muted opacity-25">
-
-                        <div class="mt-4">
-                            <h5 class="fw-bold mb-3">Descripción del puesto</h5>
-                            <div class="text-secondary" style="line-height: 1.8;">
-                                {{ oferta.descripcion|safe|linebreaks }}
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="card shadow-sm border-0 rounded-4">
-                    <div class="card-header bg-white py-3 fw-bold border-bottom">
-                        💬 Preguntas al Reclutador
-                    </div>
-                    <div class="card-body p-4">
-                        {% if user.is_authenticated %}
-                            <form method="post" class="mb-4 d-flex gap-2">
-                                {% csrf_token %}
-                                <div class="flex-grow-1">
-                                    {{ form_pregunta.pregunta }}
-                                </div>
-                                <button type="submit" name="btn_preguntar" class="btn btn-primary px-4 align-self-start">Enviar</button>
-                            </form>
-                        {% else %}
-                            <div class="alert alert-light border mb-4 text-center">
-                                <small>🔒 <a href="/login/" class="fw-bold">Inicia sesión</a> para hacer una pregunta.</small>
-                            </div>
-                        {% endif %}
-
-                        <div class="list-group list-group-flush">
-                            {% for p in oferta.preguntas.all %}
-                                <div class="list-group-item px-0 py-3">
-                                    <div class="d-flex justify-content-between mb-1">
-                                        <span class="fw-bold small text-dark"><i class="bi bi-person-circle text-secondary"></i> {{ p.usuario.username }}</span>
-                                        <small class="text-muted" style="font-size: 0.7rem;">{{ p.fecha_pregunta|timesince }}</small>
-                                    </div>
-                                    <p class="mb-2 text-secondary small">{{ p.pregunta }}</p>
-                                    
-                                    {% if p.respuesta %}
-                                        <div class="bg-light p-3 rounded-3 ms-4 border-start border-4 border-success">
-                                            <div class="d-flex align-items-center gap-2 mb-1">
-                                                <span class="badge bg-success" style="font-size: 0.6rem;">RESPUESTA OFICIAL</span>
-                                                <small class="fw-bold text-dark">{{ oferta.empresa }}</small>
-                                            </div>
-                                            <p class="mb-0 small text-secondary">{{ p.respuesta }}</p>
-                                        </div>
-                                    {% elif user == oferta.usuario %}
-                                        <form action="/pregunta/{{ p.id }}/responder/" method="post" class="mt-2 ms-4">
-                                            {% csrf_token %}
-                                            <div class="input-group input-group-sm">
-                                                <input type="text" name="respuesta" class="form-control" placeholder="Escribe la respuesta oficial...">
-                                                <button class="btn btn-outline-success">Responder</button>
-                                            </div>
-                                        </form>
-                                    {% endif %}
-                                </div>
-                            {% empty %}
-                                <div class="text-center py-4 text-muted">
-                                    <i class="bi bi-chat-square-dots display-6 opacity-25"></i>
-                                    <p class="small mt-2">Nadie ha preguntado aún. ¡Sé el primero!</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="col-lg-4 mt-4 mt-lg-0">
-                <div class="sticky-top" style="top: 20px;">
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-lg border-0 rounded-4 mb-4">
+                <div class="card-body p-4 p-md-5">
                     
-                    <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
-                        <div class="card-body p-4 text-center bg-white">
-                            <h5 class="fw-bold mb-3">¿Te interesa este trabajo?</h5>
-                            
-                            {% if user.is_authenticated %}
-                                <form action="/postular/{{ oferta.id }}/" method="post">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold rounded-pill shadow-sm mb-3 pulse-button">
-                                        📄 Enviar mi CV Ahora
-                                    </button>
-                                </form>
-                                <small class="text-muted d-block">Tu perfil será enviado inmediatamente.</small>
-                            {% else %}
-                                <a href="/login/?next={{ request.path }}" class="btn btn-dark btn-lg w-100 fw-bold rounded-pill mb-3">
-                                    🔑 Ingresar para Postular
-                                </a>
-                                <small class="text-muted">Crea tu cuenta gratis en 1 minuto.</small>
-                            {% endif %}
-                        </div>
-                        <div class="card-footer bg-light text-center py-3 border-top">
-                            <small class="text-muted">Cierra en <strong>{{ oferta.dias_para_cierre }} días</strong></small>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h2 class="fw-bold mb-0 text-dark">{{ oferta.titulo }}</h2>
+                        <form action="{% url 'toggle_favorito' oferta.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-light rounded-circle shadow-sm" title="Guardar en favoritos">
+                                <i class="far fa-heart text-danger fs-5"></i>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <h5 class="text-primary fw-bold mb-4"><i class="fas fa-building me-2"></i>{{ oferta.empresa }}</h5>
+
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <span class="badge bg-light text-dark border p-2 fs-6"><i class="fas fa-map-marker-alt text-danger me-2"></i>{{ oferta.get_region_display }}</span>
+                        <span class="badge bg-light text-dark border p-2 fs-6"><i class="fas fa-briefcase text-secondary me-2"></i>{{ oferta.get_tipo_display }}</span>
+                        {% if oferta.sueldo %}
+                            <span class="badge bg-light text-dark border p-2 fs-6"><i class="fas fa-money-bill-wave text-success me-2"></i>${{ oferta.sueldo|intcomma }}</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border p-2 fs-6"><i class="fas fa-handshake text-success me-2"></i>Sueldo a convenir</span>
+                        {% endif %}
                     </div>
 
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="list-group list-group-flush rounded-4">
-                            <a href="/oferta/{{ oferta.id }}/imprimir/" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-3">
-                                <i class="bi bi-printer text-secondary"></i> Imprimir / Guardar PDF
-                            </a>
-                            <a href="/oferta/{{ oferta.id }}/reportar/" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-3 text-danger">
-                                <i class="bi bi-flag text-danger"></i> Reportar empleo falso
-                            </a>
-                        </div>
-                    </div>
+                    <hr class="my-4">
 
-                    {% if similares %}
-                        <h6 class="fw-bold text-muted text-uppercase small mb-3 ms-1">Ofertas Similares</h6>
-                        {% for sim in similares %}
-                            <div class="card border-0 shadow-sm mb-2 rounded-3">
-                                <div class="card-body p-3">
-                                    <h6 class="mb-1 fw-bold"><a href="/oferta/{{ sim.id }}/" class="text-decoration-none text-dark stretched-link">{{ sim.titulo }}</a></h6>
-                                    <small class="text-muted">{{ sim.empresa }} • {{ sim.get_region_display }}</small>
-                                </div>
+                    <h5 class="fw-bold mb-3">Descripción del Cargo</h5>
+                    <div class="text-secondary" style="line-height: 1.6; white-space: pre-wrap;">{{ oferta.descripcion }}</div>
+
+                    <div class="d-grid mt-5">
+                        <a href="{% url 'postular_oferta' oferta.id %}" class="btn btn-warning btn-lg fw-bold text-dark shadow-sm">
+                            <i class="fas fa-paper-plane me-2"></i> Postular a esta Oferta
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer bg-light text-center py-3 text-muted small">
+                    Publicado el {{ oferta.fecha_publicacion|date:"d de F, Y" }} &bull; {{ oferta.visitas }} visualizaciones
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0"><i class="far fa-comments me-2 text-primary"></i>Preguntas al Empleador</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="mb-4">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="text" name="texto" class="form-control form-control-lg" placeholder="Escribe tu pregunta aquí..." required>
+                            <button class="btn btn-primary fw-bold" type="submit" name="btn_preguntar">Preguntar</button>
+                        </div>
+                    </form>
+
+                    {% if oferta.preguntas.all %}
+                        {% for pregunta in oferta.preguntas.all %}
+                            <div class="bg-light p-3 rounded mb-3">
+                                <p class="mb-1 fw-bold"><i class="fas fa-user-circle me-1 text-muted"></i>{{ pregunta.usuario.first_name|default:"Candidato" }}:</p>
+                                <p class="mb-2 text-dark ms-4">{{ pregunta.texto }}</p>
+                                
+                                {% if pregunta.respuesta %}
+                                    <div class="ms-4 p-2 bg-white border-start border-3 border-primary rounded">
+                                        <small class="text-primary fw-bold">Respuesta de la empresa:</small>
+                                        <p class="mb-0 small">{{ pregunta.respuesta }}</p>
+                                    </div>
+                                {% endif %}
                             </div>
                         {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center my-3">Aún no hay preguntas. ¡Sé el primero en consultar!</p>
                     {% endif %}
-
                 </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            
+            {% if user.is_authenticated and match_percent %}
+            <div class="card shadow-sm border-0 rounded-4 mb-4" style="background-color: #f8f9fa;">
+                <div class="card-body text-center">
+                    <h5 class="fw-bold text-dark mb-3">Tu Compatibilidad</h5>
+                    <div class="display-4 fw-bold {% if match_percent >= 70 %}text-success{% elif match_percent >= 40 %}text-warning{% else %}text-danger{% endif %} mb-3">
+                        {{ match_percent }}%
+                    </div>
+                    <ul class="list-unstyled text-start small">
+                        {% for detalle in match_details %}
+                            <li class="mb-2">{{ detalle.icon }} {{ detalle.text }}</li>
+                        {% endfor %}
+                    </ul>
+                    <hr>
+                    <a href="{% url 'publicar_candidato' %}" class="btn btn-outline-secondary btn-sm w-100">Actualizar Mi Perfil</a>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0">Ofertas Similares</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for sim in similares %}
+                            <a href="{% url 'detalle' sim.id %}" class="list-group-item list-group-item-action p-3">
+                                <h6 class="mb-1 fw-bold text-primary">{{ sim.titulo }}</h6>
+                                <small class="text-muted d-block mb-1"><i class="fas fa-building me-1"></i>{{ sim.empresa }}</small>
+                                <small class="text-dark"><i class="fas fa-map-marker-alt me-1 text-danger"></i>{{ sim.get_region_display }}</small>
+                            </a>
+                        {% empty %}
+                            <div class="p-4 text-center text-muted small">No hay ofertas similares en este momento.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="#" class="text-muted small text-decoration-none" data-bs-toggle="modal" data-bs-target="#reportModal">
+                    <i class="fas fa-flag text-danger me-1"></i> Reportar aviso sospechoso
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Reportar Oferta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Si esta oferta parece ser falsa, estafa o incumple las normas, por favor repórtala.</p>
+                <form action="{% url 'reportar_oferta' oferta.id %}" method="post">
+                    {% csrf_token %}
+                    <textarea name="motivo" class="form-control mb-3" rows="3" placeholder="Motivo del reporte..." required></textarea>
+                    <button type="submit" class="btn btn-danger w-100 fw-bold">Enviar Reporte</button>
+                </form>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-        /* Animación suave para el botón de postular */
-        .pulse-button { animation: pulse 2s infinite; }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
-        }
-    </style>
-</body>
-</html>
+</div>
+{% endblock %}
