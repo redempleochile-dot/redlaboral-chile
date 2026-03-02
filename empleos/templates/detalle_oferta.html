@@ -52,7 +52,7 @@
                     <hr class="my-4">
 
                     <h5 class="fw-bold mb-3">Descripción del Cargo</h5>
-                    <div class="text-secondary" style="line-height: 1.6; white-space: pre-wrap;">{{ oferta.descripcion }}</div>
+                    <div class="text-secondary" style="line-height: 1.6;">{{ oferta.descripcion|safe }}</div>
 
                     <div class="d-grid mt-5">
                         <a href="{% url 'postular_oferta' oferta.id %}" class="btn btn-warning btn-lg fw-bold text-dark shadow-sm">
