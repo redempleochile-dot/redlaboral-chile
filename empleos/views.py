@@ -26,6 +26,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse # <--- NUEVO IMPORT NECESARIO
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 # --- IMPORTACIONES PARA ACTIVACIÓN DE CUENTA ---
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -48,10 +50,11 @@ from .forms import (
 
 # --- UTILIDAD: HILO PARA EMAIL (ENVÍO RÁPIDO) ---
 class EmailThread(threading.Thread):
-    def __init__(self, subject, message, recipient_list):
+    def __init__(self, subject, message, recipient_list, html_message=None):
         self.subject = subject
         self.message = message
         self.recipient_list = recipient_list
+        self.html_message = html_message  # Nuevo parámetro para HTML
         threading.Thread.__init__(self)
 
     def run(self):
@@ -61,11 +64,12 @@ class EmailThread(threading.Thread):
                 self.message, 
                 settings.EMAIL_HOST_USER, 
                 self.recipient_list, 
-                fail_silently=False
+                fail_silently=False,
+                html_message=self.html_message  # Se envía el HTML
             )
-            print(f"✅ Correo enviado en segundo plano a: {self.recipient_list}")
+            print(f"✅ Correo enviado a: {self.recipient_list}")
         except Exception as e:
-            print(f"⚠️ Error enviando email en segundo plano: {e}")
+            print(f"⚠️ Error enviando email: {e}")
 
 # =========================================================
 # VISTAS GENERALES
@@ -463,16 +467,17 @@ def registro_usuario(request):
             link = f"https://{domain}/activar/{uid}/{token}/"
             
             asunto = "🚀 Activa tu cuenta en Busca Pega Chile"
-            mensaje = f"""
-            Hola {user.first_name},
             
-            Haz clic en el siguiente enlace para verificar tu correo y activar tu cuenta:
-            {link}
+            # 🔥 NUEVO: Renderizamos la plantilla HTML que creamos
+            html_message = render_to_string('emails/activacion.html', {
+                'nombre': user.first_name,
+                'link': link
+            })
+            # Versión de texto plano por seguridad
+            mensaje_plano = strip_tags(html_message)
             
-            Si no fuiste tú, ignora este correo.
-            """
-            
-            EmailThread(asunto, mensaje, [user.email]).start()
+            # Pasamos el html_message a nuestro hilo
+            EmailThread(asunto, mensaje_plano, [user.email], html_message=html_message).start()
             
             # 🔥 CORRECCIÓN INFALIBLE: Redirigir con señal en la URL 🔥
             # Esto evita que el mensaje se pierda por problemas de cookies/SSL
