@@ -690,3 +690,20 @@ def prueba_email(request):
         return HttpResponse("✅ ¡ÉXITO! El correo fue enviado.")
     except Exception as e:
         return HttpResponse(f"❌ ERROR DETALLADO: {e}")
+    # --- SEMÁFORO: REDIRECCIÓN INTELIGENTE POST-LOGIN ---
+@login_required
+def redireccion_post_login(request):
+    # 1. Si es el dueño/administrador (tú) -> Al panel de Jazzmin/Django
+    if request.user.is_superuser or request.user.is_staff:
+        return redirect('/admin/')
+        
+    # 2. Si es una Empresa -> A su panel de gestión de avisos
+    if hasattr(request.user, 'perfil_empresa'):
+        return redirect('mis_avisos')
+        
+    # 3. Si es un Candidato -> A la página principal a buscar pega
+    if hasattr(request.user, 'candidato'):
+        return redirect('home')
+        
+    # 4. Por defecto (si es un usuario recién creado que no ha llenado nada)
+    return redirect('home')

@@ -111,6 +111,8 @@ urlpatterns = [
     path('privacidad/', politica_privacidad, name='privacidad'),
 
     path('prueba-email/', prueba_email, name='prueba_email'),
+
+    path('redireccion-inicio/', views.redireccion_post_login, name='redireccion_login'),
 ]
 
 if settings.DEBUG:
