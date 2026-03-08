@@ -6,27 +6,8 @@ from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 from empleos.sitemaps import OfertaSitemap
 
-# Importamos TODAS las vistas (incluyendo las nuevas de Servicios)
-from empleos.views import (
-    pagina_inicio, detalle_oferta, publicar_empleo, 
-    lista_candidatos, publicar_candidato, pagina_exito, 
-    pagina_planes, pagina_estadisticas, pagina_contacto,
-    perfil_empresa, suscribir_newsletter,
-    lista_blog, detalle_noticia, imprimir_oferta,
-    editar_oferta, mis_postulaciones,
-    mapa_empleos, registro_usuario, logout_usuario,
-    eliminar_cuenta, terminos_condiciones, politica_privacidad,
-    detalle_candidato, descargar_cv_pdf,
-    mis_avisos, panel_admin, crear_alerta,
-    lista_practicas, postular_oferta, gestion_candidatos,
-    editar_empresa, reportar_oferta, marcar_leidas,
-    pago_simulado, robots_txt, exportar_candidatos_csv,
-    lista_empresas, responder_pregunta, toggle_favorito, mis_favoritos,
-    activar_cuenta, prueba_email,
-    
-    # NUEVAS VISTAS DE SERVICIOS / FREELANCE
-    lista_servicios, publicar_servicio, detalle_servicio 
-)
+# Importación general (más segura y limpia)
+from empleos import views
 
 sitemaps = {'ofertas': OfertaSitemap}
 
@@ -35,14 +16,17 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # --- PORTADA ---
-    path('', pagina_inicio, name='home'),
+    path('', views.pagina_inicio, name='home'),
 
     # --- AUTENTICACIÓN ---
-    path('registro/', registro_usuario, name='registro_usuario'),
-    path('activar/<uidb64>/<token>/', activar_cuenta, name='activar'),
+    path('registro/', views.registro_usuario, name='registro_usuario'),
+    path('activar/<uidb64>/<token>/', views.activar_cuenta, name='activar'),
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
-    path('logout/', logout_usuario, name='logout'),
-    path('cuenta/eliminar/', eliminar_cuenta, name='eliminar_cuenta'),
+    path('logout/', views.logout_usuario, name='logout'),
+    path('cuenta/eliminar/', views.eliminar_cuenta, name='eliminar_cuenta'),
+    
+    # 🔥 NUEVO SEMÁFORO DE REDIRECCIÓN 🔥
+    path('redireccion-inicio/', views.redireccion_post_login, name='redireccion_login'),
     
     # --- RECUPERAR CONTRASEÑA ---
     path('reset_password/', auth_views.PasswordResetView.as_view(template_name='registration/password_reset.html'), name='password_reset'),
@@ -51,68 +35,66 @@ urlpatterns = [
     path('reset_password_complete/', auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
 
     # --- OFERTAS ---
-    path('oferta/<int:id>/', detalle_oferta, name='detalle'),
-    path('oferta/editar/<uuid:token>/', editar_oferta, name='editar_oferta'),
-    path('oferta/<int:id>/imprimir/', imprimir_oferta, name='imprimir'),
-    path('publicar/', publicar_empleo, name='publicar'), 
-    path('publicar_empleo/', publicar_empleo, name='publicar_empleo'), 
-    path('practicas/', lista_practicas, name='lista_practicas'),
+    path('oferta/<int:id>/', views.detalle_oferta, name='detalle'),
+    path('oferta/editar/<uuid:token>/', views.editar_oferta, name='editar_oferta'),
+    path('oferta/<int:id>/imprimir/', views.imprimir_oferta, name='imprimir'),
+    path('publicar/', views.publicar_empleo, name='publicar'), 
+    path('publicar_empleo/', views.publicar_empleo, name='publicar_empleo'), 
+    path('practicas/', views.lista_practicas, name='lista_practicas'),
     
-    # --- SERVICIOS / FREELANCE (NUEVO) ---
-    path('servicios/', lista_servicios, name='lista_servicios'),
-    path('servicios/publicar/', publicar_servicio, name='publicar_servicio'),
-    path('servicios/<int:id>/', detalle_servicio, name='detalle_servicio'),
+    # --- SERVICIOS / FREELANCE ---
+    path('servicios/', views.lista_servicios, name='lista_servicios'),
+    path('servicios/publicar/', views.publicar_servicio, name='publicar_servicio'),
+    path('servicios/<int:id>/', views.detalle_servicio, name='detalle_servicio'),
     
     # --- FAVORITOS, Q&A, EMPRESAS ---
-    path('oferta/<int:id_oferta>/favorito/', toggle_favorito, name='toggle_favorito'),
-    path('mis-favoritos/', mis_favoritos, name='mis_favoritos'),
-    path('empresas/', lista_empresas, name='lista_empresas'),
-    path('pregunta/<int:id_pregunta>/responder/', responder_pregunta, name='responder_pregunta'),
+    path('oferta/<int:id_oferta>/favorito/', views.toggle_favorito, name='toggle_favorito'),
+    path('mis-favoritos/', views.mis_favoritos, name='mis_favoritos'),
+    path('empresas/', views.lista_empresas, name='lista_empresas'),
+    path('pregunta/<int:id_pregunta>/responder/', views.responder_pregunta, name='responder_pregunta'),
 
     # --- SEO ---
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
-    path('robots.txt', robots_txt, name='robots_txt'),
+    path('robots.txt', views.robots_txt, name='robots_txt'),
 
     # --- GESTIÓN EMPRESA ---
-    path('empresa/editar/', editar_empresa, name='editar_empresa'),
-    path('oferta/<int:id>/reportar/', reportar_oferta, name='reportar_oferta'),
-    path('empresa/<str:nombre_empresa>/', perfil_empresa, name='perfil_empresa'),
-    path('mis-avisos/', mis_avisos, name='mis_avisos'),
-    path('panel-admin/', panel_admin, name='panel_admin'),
-    path('postular/<int:id>/', postular_oferta, name='postular_oferta'),
-    path('gestion-oferta/<int:id_oferta>/candidatos/', gestion_candidatos, name='gestion_candidatos'),
-    path('gestion-oferta/<int:id_oferta>/exportar/', exportar_candidatos_csv, name='exportar_csv'),
+    path('empresa/editar/', views.editar_empresa, name='editar_empresa'),
+    path('oferta/<int:id>/reportar/', views.reportar_oferta, name='reportar_oferta'),
+    path('empresa/<str:nombre_empresa>/', views.perfil_empresa, name='perfil_empresa'),
+    path('mis-avisos/', views.mis_avisos, name='mis_avisos'),
+    path('panel-admin/', views.panel_admin, name='panel_admin'),
+    path('postular/<int:id>/', views.postular_oferta, name='postular_oferta'),
+    path('gestion-oferta/<int:id_oferta>/candidatos/', views.gestion_candidatos, name='gestion_candidatos'),
+    path('gestion-oferta/<int:id_oferta>/exportar/', views.exportar_candidatos_csv, name='exportar_csv'),
     
     # --- CANDIDATOS ---
-    path('candidatos/', lista_candidatos, name='candidatos'),
-    path('candidato/<int:id>/', detalle_candidato, name='detalle_candidato'),
-    path('candidato/<int:id>/descargar/', descargar_cv_pdf, name='descargar_cv'),
-    path('publicar-perfil/', publicar_candidato, name='publicar_perfil'),
-    path('publicar_candidato/', publicar_candidato, name='publicar_candidato'), 
-    path('crear-alerta/', crear_alerta, name='crear_alerta'),
+    path('candidatos/', views.lista_candidatos, name='candidatos'),
+    path('candidato/<int:id>/', views.detalle_candidato, name='detalle_candidato'),
+    path('candidato/<int:id>/descargar/', views.descargar_cv_pdf, name='descargar_cv'),
+    path('publicar-perfil/', views.publicar_candidato, name='publicar_perfil'),
+    path('publicar_candidato/', views.publicar_candidato, name='publicar_candidato'), 
+    path('crear-alerta/', views.crear_alerta, name='crear_alerta'),
     
     # --- NOTIFICACIONES Y PAGOS ---
-    path('notificaciones/leidas/', marcar_leidas, name='marcar_leidas'),
-    path('planes/', pagina_planes, name='planes'),
-    path('checkout/<str:plan>/', pago_simulado, name='pago_simulado'),
+    path('notificaciones/leidas/', views.marcar_leidas, name='marcar_leidas'),
+    path('planes/', views.pagina_planes, name='planes'),
+    path('checkout/<str:plan>/', views.pago_simulado, name='pago_simulado'),
 
     # --- EXTRAS ---
-    path('estadisticas/', pagina_estadisticas, name='estadisticas'),
-    path('contacto/', pagina_contacto, name='contacto'),
-    path('suscribir/', suscribir_newsletter, name='suscribir_newsletter'),
-    path('blog/', lista_blog, name='blog'),
-    path('blog/<int:id>/', detalle_noticia, name='detalle_noticia'),
-    path('exito/', pagina_exito, name='pagina_exito'),
-    path('mis-postulaciones/', mis_postulaciones, name='mis_postulaciones'),
-    path('mapa/', mapa_empleos, name='mapa_empleos'),
+    path('estadisticas/', views.pagina_estadisticas, name='estadisticas'),
+    path('contacto/', views.pagina_contacto, name='contacto'),
+    path('suscribir/', views.suscribir_newsletter, name='suscribir_newsletter'),
+    path('blog/', views.lista_blog, name='blog'),
+    path('blog/<int:id>/', views.detalle_noticia, name='detalle_noticia'),
+    path('exito/', views.pagina_exito, name='pagina_exito'),
+    path('mis-postulaciones/', views.mis_postulaciones, name='mis_postulaciones'),
+    path('mapa/', views.mapa_empleos, name='mapa_empleos'),
 
     # --- LEGALES ---
-    path('terminos/', terminos_condiciones, name='terminos'),
-    path('privacidad/', politica_privacidad, name='privacidad'),
+    path('terminos/', views.terminos_condiciones, name='terminos'),
+    path('privacidad/', views.politica_privacidad, name='privacidad'),
 
-    path('prueba-email/', prueba_email, name='prueba_email'),
-
-    path('redireccion-inicio/', views.redireccion_post_login, name='redireccion_login'),
+    path('prueba-email/', views.prueba_email, name='prueba_email'),
 ]
 
 if settings.DEBUG:
